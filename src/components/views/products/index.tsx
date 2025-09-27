@@ -111,7 +111,7 @@ const ProductsPage = () => {
           <div className="flex gap-3 text-sm">
             <Link
               href="/auth/login"
-              className="rounded-lg bg-white px-3 py-2 font-semibold text-gray-900 border border-gray-300 hover:bg-gray-100"
+              className="rounded-lg bg-black px-3 py-2 font-semibold text-white hover:bg-gray-800"
             >
               Login
             </Link>
