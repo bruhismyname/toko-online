@@ -1,4 +1,4 @@
-import DashboardView from "@/components/views";
+import DashboardView from "@/components/views/dashboard";
 
 const DashboardPage = () => {
     return (<DashboardView />)
