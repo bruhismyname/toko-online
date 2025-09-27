@@ -1,3 +1,4 @@
+// src/components/views/admin/index.tsx
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -32,7 +33,7 @@ type OrderItem = {
   subtotal: number;      // price * qty
 };
 
-/** ------------ Mock data shaped like your DB ------------ */
+/** ------------ Mock data ------------ */
 const CATEGORIES: Category[] = [
   { id: 1, name: "Running" },
   { id: 2, name: "Basketball" },
@@ -60,11 +61,11 @@ const ORDER_ITEMS_SEED: OrderItem[] = [
   { id: 3, order_id: 202, product_id: 2, price: 2300000, qty: 1, subtotal: 2300000 },
 ];
 
+/** ------------ Helpers ------------ */
 const currency = (n: number) =>
   n.toLocaleString("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
 
 /** ------------ UI components ------------ */
-// Kartu produk khusus admin (Edit / Hapus)
 const ProductCard = ({
   p,
   categoryName,
@@ -116,7 +117,10 @@ const AdminPage = () => {
   const [sort, setSort] = useState<"Name A-Z" | "Name Z-A" | "Lowest Price" | "Highest Price">("Name A-Z");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
 
-  const catMap = useMemo(() => Object.fromEntries(CATEGORIES.map(c => [c.id, c.name])) as Record<number, string>, []);
+  const catMap = useMemo(
+    () => Object.fromEntries(CATEGORIES.map(c => [c.id, c.name])) as Record<number, string>,
+    []
+  );
 
   const filtered = useMemo(() => {
     let data = products.slice();
@@ -177,18 +181,34 @@ const AdminPage = () => {
     }
   }
 
-  /** Pesanan: list & ubah status */
+  /** Pesanan: list + status dengan konfirmasi */
   const [orders, setOrders] = useState<Order[]>(ORDERS_SEED);
   const [orderItems] = useState<OrderItem[]>(ORDER_ITEMS_SEED);
   const itemsFor = (orderId: number) => orderItems.filter(it => it.order_id === orderId);
   const productName = (pid: number) => products.find(p => p.id === pid)?.name ?? `#${pid}`;
-  function changeStatus(id: number, status: OrderStatus) {
-    setOrders(prev => prev.map(o => (o.id === id ? { ...o, status } : o)));
+
+  // status sementara per order (belum disimpan)
+  const [pendingStatus, setPendingStatus] = useState<Record<number, OrderStatus | null>>({});
+
+  function setTempStatus(id: number, status: OrderStatus) {
+    setPendingStatus(prev => ({ ...prev, [id]: status }));
+  }
+  function confirmStatus(id: number) {
+    const next = pendingStatus[id];
+    const original = orders.find(o => o.id === id)?.status;
+    if (!next || next === original) return;
+    if (confirm(`Ubah status pesanan #${id} menjadi "${next}"?`)) {
+      setOrders(prev => prev.map(o => (o.id === id ? { ...o, status: next } : o)));
+      setPendingStatus(prev => ({ ...prev, [id]: null }));
+    }
+  }
+  function cancelTempStatus(id: number) {
+    setPendingStatus(prev => ({ ...prev, [id]: null }));
   }
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Header (tanpa login/register) */}
+      {/* Header (tanpa Login/Register) */}
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center gap-2 text-xl font-bold text-gray-900">
@@ -210,7 +230,7 @@ const AdminPage = () => {
         <aside className="md:col-span-4 lg:col-span-3">
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
             <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
-              <Filter className="h-5 w-5 text-gray-900" /> Filter & Manage
+              <Filter className="h-5 w-5 text-gray-900" /> Filter &amp; Manage
             </h2>
 
             {/* Search */}
@@ -275,7 +295,6 @@ const AdminPage = () => {
               </select>
             </div>
 
-            {/* Divider */}
             <div className="my-6 h-px bg-gray-200" />
 
             {/* Form Tambah/Edit */}
@@ -360,10 +379,15 @@ const AdminPage = () => {
                 onDelete={removeProduct}
               />
             ))}
+            {filtered.length === 0 && (
+              <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+                Tidak ada produk yang cocok.
+              </div>
+            )}
           </div>
         </section>
 
-        {/* Orders */}
+        {/* Orders + konfirmasi status */}
         <section className="md:col-span-12">
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
             <h2 className="mb-4 text-lg font-bold text-gray-900">Daftar Pesanan</h2>
@@ -374,46 +398,73 @@ const AdminPage = () => {
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">ID</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">User ID</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Waktu</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 max-w-[320px]">Alamat & Item</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 max-w-[320px]">Alamat &amp; Item</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-600">Total</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((o) => (
-                    <tr key={o.id} className="border-t border-gray-200 align-top">
-                      <td className="px-4 py-3">#{o.id}</td>
-                      <td className="px-4 py-3">{o.r_id}</td>
-                      <td className="px-4 py-3" suppressHydrationWarning>
-                        {new Intl.DateTimeFormat("id-ID", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Jakarta" }).format(new Date(o.created_at))}
-                      </td>
-                      <td className="px-4 py-3 max-w-[360px]">
-                        <p className="truncate" title={o.address_text}>{o.address_text}</p>
-                        <div className="mt-2 space-y-1 text-xs text-gray-600">
-                          {itemsFor(o.id).map((it) => (
-                            <div key={it.id} className="flex justify-between">
-                              <span>{productName(it.product_id)} × {it.qty}</span>
-                              <span>{currency(it.subtotal)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold">{currency(o.total)}</td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={o.status}
-                          onChange={(e) => changeStatus(o.id, e.target.value as OrderStatus)}
-                          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                        >
-                          <option value="pending" disabled={o.status !== "pending"}>pending</option>
-                          <option value="diproses">diproses</option>
-                          <option value="dikirim">dikirim</option>
-                          <option value="selesai">selesai</option>
-                          <option value="batal">batal</option>
-                        </select>
-                      </td>
-                    </tr>
-                  ))}
+                  {orders.map((o) => {
+                    const temp = pendingStatus[o.id];
+                    const value = temp ?? o.status;
+                    const dirty = temp !== null && temp !== undefined && temp !== o.status;
+
+                    return (
+                      <tr key={o.id} className="border-t border-gray-200 align-top">
+                        <td className="px-4 py-3">#{o.id}</td>
+                        <td className="px-4 py-3">{o.r_id}</td>
+                        <td className="px-4 py-3" suppressHydrationWarning>
+                          {new Intl.DateTimeFormat("id-ID", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Jakarta" }).format(new Date(o.created_at))}
+                        </td>
+                        <td className="px-4 py-3 max-w-[360px]">
+                          <p className="truncate font-medium" title={o.address_text}>{o.address_text}</p>
+                          <div className="mt-2 space-y-1 text-xs text-gray-600">
+                            {itemsFor(o.id).map((it) => (
+                              <div key={it.id} className="flex justify-between">
+                                <span>{productName(it.product_id)} × {it.qty}</span>
+                                <span>{currency(it.subtotal)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold">{currency(o.total)}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={value}
+                              onChange={(e) => setTempStatus(o.id, e.target.value as OrderStatus)}
+                              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                            >
+                              <option value="pending">pending</option>
+                              <option value="diproses">diproses</option>
+                              <option value="dikirim">dikirim</option>
+                              <option value="selesai">selesai</option>
+                              <option value="batal">batal</option>
+                            </select>
+
+                            {dirty && (
+                              <>
+                                <button
+                                  onClick={() => confirmStatus(o.id)}
+                                  className="rounded-lg bg-black px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-800"
+                                  title="Simpan status"
+                                >
+                                  Simpan
+                                </button>
+                                <button
+                                  onClick={() => cancelTempStatus(o.id)}
+                                  className="rounded-lg border border-gray-900 px-3 py-1.5 text-xs font-semibold hover:bg-gray-900 hover:text-white"
+                                  title="Batalkan perubahan"
+                                >
+                                  Batal
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {orders.length === 0 && (
                     <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-500">Belum ada pesanan</td></tr>
                   )}
