@@ -21,13 +21,35 @@ export async function RetrieveDataById(tableName: string, id: string) {
 
 export async function RetrieveDataByField(
   tableName: string,
-  field: string,
-  value: string
+  filters: { [key: string]: string | number | boolean }
 ) {
-  const { data: result, error } = await supabase
-    .from(tableName)
-    .select("*")
-    .eq(field, value);
+  let query = supabase.from(tableName).select("*");
 
-  return { data: result || [], error };
+  Object.entries(filters).forEach(([field, value]) => {
+    query = query.eq(field, value);
+  });
+
+  const { data: result, error } = await query;
+  return { data: result ?? [], error };
+}
+
+export async function RetrieveDataWithJoin(
+  tableName: string,
+  relation: string, 
+  fields: string[] = ["*"], 
+  relationFields: string[] = ["*"], 
+  filters?: { [key: string]: string | number | boolean } 
+) {
+  let query = supabase
+    .from(tableName)
+    .select(`${fields.join(",")}, ${relation} (${relationFields.join(",")})`);
+
+  if (filters) {
+    Object.entries(filters).forEach(([field, value]) => {
+      query = query.eq(field, value);
+    });
+  }
+
+  const { data: result, error } = await query;
+  return { data: result ?? [], error };
 }

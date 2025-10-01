@@ -14,7 +14,7 @@ export default async function handler(req : NextApiRequest, res : NextApiRespons
         if (!email || !password) {
             return res.status(400).json({ message: "Semua field wajib diisi" });
         } else {
-            const data = await RetrieveDataByField("users", "email", email);
+            const data = await RetrieveDataByField("users", { email });
             console.log(data)
             if (data.error) {
                 console.error("Supabase error:", data.error);
