@@ -1,4 +1,3 @@
-// src/components/views/admin/index.tsx
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -209,7 +208,7 @@ const AdminPage = () => {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header (tanpa Login/Register) */}
-      <header className="border-b border-gray-200 bg-white">
+      {<header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center gap-2 text-xl font-bold text-gray-900">
             <Store className="h-6 w-6" />
@@ -222,7 +221,7 @@ const AdminPage = () => {
           </nav>
           <div className="w-[1px]" />
         </div>
-      </header>
+      </header> }
 
       {/* Content */}
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-8 md:grid-cols-12">
