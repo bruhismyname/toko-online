@@ -31,7 +31,7 @@ const LoginView = () => {
       }
 
       alert("Login berhasil!");
-      window.location.href = "/dashboard";
+      window.location.href = "/";
     } catch (err: any) {
       setError(err.message);
     }
