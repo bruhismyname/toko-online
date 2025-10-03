@@ -170,7 +170,7 @@ const CartView = () => {
                                                             {item.product.name}
                                                         </h2>
                                                         <p className="text-gray-600 mb-1">
-                                                            Price: <span className="font-semibold">${item.product.price}</span>
+                                                            Price: <span className="font-semibold">Rp {Number(item.product.price).toLocaleString("id-ID")}</span>
                                                         </p>
                                                         
                                                         {/* Quantity Controls */}
@@ -212,7 +212,7 @@ const CartView = () => {
                                                 <div className="flex flex-col justify-between items-end min-w-[200px]">
                                                     <div className="text-right">
                                                         <p className="text-sm text-gray-600 mb-1">Subtotal</p>
-                                                        <p className="text-2xl font-bold text-gray-900">${subtotal}</p>
+                                                        <p className="text-2xl font-bold text-gray-900">Rp {Number(subtotal).toLocaleString("id-ID")}</p>
                                                     </div>
                                                     
                                                     <button
