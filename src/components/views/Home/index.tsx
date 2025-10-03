@@ -22,15 +22,25 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 2,
-    name: "Double Stack",
-    image_url:
-      "https://www.converse.co.th/en/media/wysiwyg/DT_run-star-trainer-category-2.jpg",
+    name: "Chuck 70",
+    image_url: "https://www.converse.co.th/en/media/wysiwyg/DT_chuck-70.jpg",
   },
   {
     id: 3,
-    name: "Run Star Trainer",
+    name: "Slip-On & Sandal",
+    image_url: "https://www.converse.id/media/catalog/category/slip-on_1.jpg",
+  },
+  {
+    id: 4,
+    name: "Skateboarding",
     image_url:
-      "https://www.converse.co.th/en/media/wysiwyg/MB_double-stack-category.jpg",
+      "https://www.converse.id/media/catalog/category/Skateboarding_3.jpg",
+  },
+  {
+    id: 5,
+    name: "Basketball",
+    image_url:
+      "https://www.converse.id/media/catalog/category/Basketball_1.jpg",
   },
 ];
 
@@ -95,38 +105,6 @@ const ProductCard = ({ p }: { p: Product }) => (
 const HomeView = () => {
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Logo />
-          <nav className="hidden gap-6 text-sm md:flex">
-            <Link href="/" className="text-gray-900">
-              Home
-            </Link>
-            <Link href="/products" className="text-gray-600 hover:text-black">
-              Products
-            </Link>
-            <Link href="/about" className="text-gray-600 hover:text-black">
-              About
-            </Link>
-          </nav>
-          <div className="flex gap-3 text-sm">
-            <Link
-              href="/auth/login"
-              className="rounded-lg bg-black px-3 py-2 font-semibold text-white hover:bg-gray-800"
-            >
-              Login
-            </Link>
-            <Link
-              href="/auth/register"
-              className="rounded-lg bg-black px-3 py-2 font-semibold text-white hover:bg-gray-800"
-            >
-              Register
-            </Link>
-          </div>
-        </div>
-      </header>
-
       {/* HERO */}
       <section className="border-b border-gray-200 bg-black text-white">
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-8 px-4 py-16 md:grid-cols-2">
@@ -161,14 +139,16 @@ const HomeView = () => {
 
           <div className="relative">
             <div className="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900 shadow-lg">
-              <Image
-                src="/images/hero-converse.jpg"
-                alt="Converse Chuck Taylor"
-                width={900}
-                height={700}
+              <video
+                src="https://www.converse.id/media/CON_SHAI-001-LAUNCH_FamilyLaunch_15sec_16x9_250923_v01A_H264.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
                 className="h-full w-full object-cover"
-                priority
-              />
+              >
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
         </div>
@@ -247,32 +227,17 @@ const HomeView = () => {
             </div>
             <div className="relative h-64 overflow-hidden rounded-xl bg-gray-200 md:h-80">
               <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-                [Gambar Sejarah Converse]
+                <Image
+                  src="https://i.ytimg.com/vi/mFzWEf-biCM/maxresdefault.jpg"
+                  alt="Converse History"
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
               </div>
             </div>
           </div>
         </div>
       </section>
-
-      {/* FOOTER */}
-      <footer className="border-t border-gray-200 bg-black text-white">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm md:flex-row">
-          <p>
-            © {new Date().getFullYear()} Bakul Converse. All rights reserved.
-          </p>
-          <div className="flex gap-4">
-            <Link href="/privacy" className="hover:underline">
-              Privacy
-            </Link>
-            <Link href="/terms" className="hover:underline">
-              Terms
-            </Link>
-            <Link href="/contact" className="hover:underline">
-              Contact
-            </Link>
-          </div>
-        </div>
-      </footer>
     </main>
   );
 };
