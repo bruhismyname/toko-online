@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Store, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import Logo from "@/components/common/Logo"; // Import Logo
 
 const LoginView = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -37,22 +38,24 @@ const LoginView = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
-        {/* Top bar */}
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
         <div className="mb-6 flex items-center justify-between">
           <Link
             href="/"
             className="flex items-center text-gray-500 hover:text-black"
           >
             <ArrowLeft className="mr-1 h-4 w-4" />
-            Back
+            Kembali
           </Link>
-          <Store className="h-6 w-6 text-black" />
+          <div className="flex items-center">
+            <Logo showText={false} />
+            {/* <span className="font-bold">Bakul Converse</span> */}
+          </div>
         </div>
 
         <h2 className="mb-6 text-center text-2xl font-bold text-gray-800">
-          Welcome Back
+          Selamat Datang <br /> di Bakul Converse!
         </h2>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
@@ -62,8 +65,8 @@ const LoginView = () => {
             <input
               type="email"
               name="email"
-              placeholder="you@example.com"
               required
+              placeholder="Alamat Email"
               className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
             />
           </div>
@@ -74,15 +77,14 @@ const LoginView = () => {
             <input
               type={showPassword ? "text" : "password"}
               name="password"
-              placeholder="Password"
               required
+              placeholder="Password"
               className="w-full rounded-lg border border-gray-300 pl-10 pr-10 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
             />
             <button
               type="button"
-              onClick={() => setShowPassword((v) => !v)}
+              onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-              aria-label="Toggle password visibility"
             >
               {showPassword ? (
                 <EyeOff className="h-5 w-5" />
@@ -99,13 +101,13 @@ const LoginView = () => {
                 type="checkbox"
                 className="h-4 w-4 rounded border-gray-300"
               />
-              Remember me
+              Ingat saya
             </label>
             <Link
               href="/auth/forgot"
               className="text-gray-600 hover:text-black"
             >
-              Forgot password?
+              Lupa password?
             </Link>
           </div>
 
@@ -115,17 +117,17 @@ const LoginView = () => {
             type="submit"
             className="w-full rounded-lg bg-black px-4 py-2 font-semibold text-white transition hover:bg-gray-800"
           >
-            Sign In
+            Masuk
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500">
-          Don’t have an account?{" "}
+          Belum punya akun?{" "}
           <Link
             href="/auth/register"
             className="font-medium text-black hover:underline"
           >
-            Create one
+            Daftar sekarang
           </Link>
         </p>
       </div>
