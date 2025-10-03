@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 import Image from "next/image"
+import Navbar from "@/components/fragment/navbar"
 
 const CartView = () => {
     const [user, setUser] = useState<any>(null)
@@ -9,7 +10,7 @@ const CartView = () => {
     const router = useRouter()
 
     console.log(cart)
-    console.log(cart.id)
+    console.log(cartId)
 
     useEffect(() => {
         const checkUser = async () => {
@@ -46,8 +47,8 @@ const CartView = () => {
                 const json = await res.json()
                 setCart(json.data)
                 console.log(json.data)
-                console.log(json.data.id)
-                setCartId(json.data.id)
+                console.log(json.data[0].id)
+                setCartId(json.data[0].id)
             } else {
                 console.log('error')
             }
@@ -55,21 +56,73 @@ const CartView = () => {
             console.error(error)
         }
     }
+    
+    console.log(user)
 
-    // Fungsi placeholder - nanti diimplementasikan
-    const handleIncreaseQty = (itemId: string) => {
-        console.log('Increase qty for item:', itemId)
-        // TODO: Implementasi increase qty
+    const handleIncreaseQty = async (product_id : string , cart_id : string) => {
+        console.log('Increase qty for item:', product_id, cart_id)
+        try {
+            const res = await fetch(`/api/cart`, {
+                method: "PUT" , 
+                headers: {
+                    "Content-Type": "application/json",
+                } , 
+                body: JSON.stringify({ product_id, cart_id , action : 'increase' }),
+                credentials: "include",
+            })
+            if (res.ok) {
+                const json = await res.json()
+                setCart(json.data)
+            }
+        } catch (error) {
+            console.log(error)
+        }
     }
 
-    const handleDecreaseQty = (itemId: string) => {
-        console.log('Decrease qty for item:', itemId)
-        // TODO: Implementasi decrease qty
+    const handleDecreaseQty = async (product_id: string , cart_id: string) => {
+        console.log('Decrease qty for item:', product_id, cart_id)
+
+        try {
+            const res = await fetch(`/api/cart`, {
+                method: "PUT" , 
+                headers: {
+                    "Content-Type": "application/json",
+                } , 
+                body: JSON.stringify({ product_id, cart_id , action : 'decrease' }),
+                credentials: "include",
+            }) 
+            if (res.ok) {
+                const json = await res.json()
+                setCart(json.data)
+            }
+        } catch (error) {
+            console.log(error)
+        }
+
     }
 
-    const handleDelete = (itemId: string) => {
-        console.log('Delete item:', itemId)
-        // TODO: Implementasi delete item
+    const handleDelete = async (product_id: string , cart_id: string) => {
+        console.log('Delete item:', product_id, cart_id)
+
+        try {
+            const res = await fetch(`/api/cart`, {
+                method: "DELETE" , 
+                headers: {
+                    "Content-Type": "application/json",
+                } , 
+                body: JSON.stringify({ product_id, cart_id }),
+                credentials: "include",
+            })
+
+            if (res.ok) {
+                const json = await res.json()
+                setCart(json.data)
+            } else {
+                console.log(res)
+            }
+        } catch (error) {
+            console.log(error)
+        }
     }
 
     const handleCheckout = (itemId: string, productName: string, total: number) => {
@@ -82,16 +135,12 @@ const CartView = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <nav className="bg-white shadow-sm border-b border-gray-200 p-4">
-                <div className="max-w-6xl mx-auto">
-                    <h1 className="text-xl font-bold">Store</h1>
-                </div>
-            </nav>
+            <Navbar />
 
             <main className="mx-auto max-w-6xl px-4 py-10">
                 <h1 className="mb-6 text-2xl font-bold text-gray-900">Your Cart</h1>
 
-                {cart.length === 0 ? (
+                {cart.length === 0 || cart[0].cart_items.length === 0  ? (
                     <div className="text-center py-12">
                         <p className="text-gray-600 text-lg">Your cart is empty.</p>
                     </div>
@@ -128,7 +177,7 @@ const CartView = () => {
                                                         <div className="flex items-center gap-3 mt-4">
                                                             <span className="text-gray-700 font-medium">Quantity:</span>
                                                             <button
-                                                                onClick={() => handleDecreaseQty(item.id)}
+                                                                onClick={() => handleDecreaseQty(item.product.id , cartId)}
                                                                 className="w-9 h-9 rounded-lg border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 hover:border-gray-400 transition font-semibold text-gray-700 text-lg"
                                                             >
                                                                 -
@@ -137,7 +186,7 @@ const CartView = () => {
                                                                 {item.qty}
                                                             </span>
                                                             <button
-                                                                onClick={() => handleIncreaseQty(item.id)}
+                                                                onClick={() => handleIncreaseQty(item.product.id , cartId)}
                                                                 className="w-9 h-9 rounded-lg border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 hover:border-gray-400 transition font-semibold text-gray-700 text-lg"
                                                             >
                                                                 +
@@ -148,7 +197,7 @@ const CartView = () => {
                                                     {/* Delete Button */}
                                                     <div className="mt-4">
                                                         <button
-                                                            onClick={() => handleDelete(item.id)}
+                                                            onClick={() => handleDelete(item.product.id , cartId)}
                                                             className="text-red-500 hover:text-red-700 font-medium transition flex items-center gap-1"
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

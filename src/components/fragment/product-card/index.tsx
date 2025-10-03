@@ -15,12 +15,14 @@ type ProductCardProps = {
   onAddToCart?: (productId: number) => void; 
 };
 
+
 const ProductCard = ({ p, onAddToCart }: ProductCardProps) => {
+  console.log(p);
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
       <div className="relative aspect-[4/3] bg-gray-50">
         <Image
-          src={p.image_url || "/images/placeholder.jpg"}
+          src={p.image_url}
           alt={p.name}
           fill
           className="object-cover"

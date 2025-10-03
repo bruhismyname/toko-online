@@ -20,6 +20,8 @@ const ProductsView = () => {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
 
+  console.log(allProducts)
+
   const getAllProducts = async () => {
     setLoading(true);
     setError(null);

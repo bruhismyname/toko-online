@@ -19,6 +19,16 @@ export async function updateData(tableName: string, id: string, data: any) {
   return { data: result ?? [], error }; 
 }
 
+export async function deleteData(tableName: string, id: string) {
+  const { data: result, error } = await supabase
+    .from(tableName)
+    .delete()
+    .eq("id", id)
+    .select("*");
+
+  return { data: result ?? [], error }; 
+}
+
 export async function RetrieveData(tableName: string) {
   const { data: result, error } = await supabase.from(tableName).select("*");
   return { data: result, error };

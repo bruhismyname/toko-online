@@ -6,7 +6,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, stock, is_active, created_at, categories (id, name)");
+        .select("id, name, price, stock, is_active, created_at, categories (id, name), image_url");
 
       if (error) {
         console.error("Supabase error:", error);
