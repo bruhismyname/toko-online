@@ -10,10 +10,14 @@ const currency = (n: number) =>
     maximumFractionDigits: 0,
   });
 
-const ProductCard = ({ p }: { p: Product }) => {
+type ProductCardProps = {
+  p: Product;
+  onAddToCart?: (productId: number) => void; 
+};
+
+const ProductCard = ({ p, onAddToCart }: ProductCardProps) => {
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
-      {/* Gambar produk */}
       <div className="relative aspect-[4/3] bg-gray-50">
         <Image
           src={p.image_url || "/images/placeholder.jpg"}
@@ -25,6 +29,7 @@ const ProductCard = ({ p }: { p: Product }) => {
 
       <div className="px-4 pb-4 pt-3">
         <p className="text-xs text-gray-500">{p.categories?.name}</p>
+        <p className="text-xs text-gray-500">{p.id}</p>
         <h3 className="mt-1 line-clamp-2 text-base font-semibold text-gray-900">
           {p.name}
         </h3>
@@ -42,6 +47,7 @@ const ProductCard = ({ p }: { p: Product }) => {
           <button
             className="rounded-lg bg-black px-3 py-2 text-white transition hover:bg-gray-800"
             aria-label="Add to cart"
+            onClick={() => onAddToCart?.(p.id)} 
           >
             <Plus className="h-5 w-5" />
           </button>

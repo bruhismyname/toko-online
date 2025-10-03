@@ -7,6 +7,7 @@ type Product = {
   stock: number;
   is_active: boolean;
   created_at: string;
+  category_id?: number;
   image_url?: string; 
   categories?: Category;
 };

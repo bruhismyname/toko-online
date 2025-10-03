@@ -18,6 +18,7 @@ const ProductsView = () => {
   const [sort, setSort] = useState<"Name A-Z" | "Name Z-A" | "Lowest Price" | "Highest Price">("Name A-Z");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
 
   const getAllProducts = async () => {
     setLoading(true);
@@ -48,6 +49,7 @@ const ProductsView = () => {
 
   useEffect(() => {
     getAllProducts();
+    checkSession();
   }, []);
 
   const filtered = useMemo(() => {
@@ -71,21 +73,63 @@ const ProductsView = () => {
     return data;
   }, [allProducts, query, categoryId, sort]);
 
+  const checkSession = async () => {
+    try {
+      const res = await fetch("/api/session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setUser(null);
+      } else {
+        setUser(json.user);
+      }
+    } catch (error) {
+      setUser(null);
+    }
+  };
+  
+
+  const handleAddToCart = async ( product_id : number) => {
+    if (user === null) {
+      router.push("/auth/login");
+    } else {
+        try {
+        const res = await fetch("/api/cart", {
+          method : "POST" , 
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ product_id }),
+          credentials: "include",
+        })
+
+        if (res.ok) {
+          const json = await res.json()
+          alert(json.message)
+        }
+      } catch (error) {
+        console.log("Error adding to cart:", error);
+      }
+    }
+  }
+
+  console.log(user)
+
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Header */}
       <Navbar />
 
-      {/* Content */}
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-8 md:grid-cols-12">
-        {/* Sidebar */}
         <aside className="md:col-span-4 lg:col-span-3">
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
             <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
               <Filter className="h-5 w-5 text-gray-900" /> Filter Shoes
             </h2>
 
-            {/* Search */}
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
               <input
@@ -96,7 +140,6 @@ const ProductsView = () => {
               />
             </div>
 
-            {/* Category */}
             <div className="mt-5">
               <p className="mb-2 text-sm font-medium text-gray-700">Category</p>
               <div className="space-y-2">
@@ -125,7 +168,6 @@ const ProductsView = () => {
               </div>
             </div>
 
-            {/* Sort */}
             <div className="mt-5">
               <p className="mb-2 text-sm font-medium text-gray-700">Sort By</p>
               <select
@@ -142,7 +184,6 @@ const ProductsView = () => {
           </div>
         </aside>
 
-        {/* Products */}
         <section className="md:col-span-8 lg:col-span-9">
           <div className="mb-4">
             <h1 className="text-2xl font-bold text-gray-900">All Shoes</h1>
@@ -154,7 +195,11 @@ const ProductsView = () => {
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((p) => (
-              <ProductCard key={p.id} p={p} />
+              <ProductCard 
+                key={p.id} 
+                p={p} 
+                onAddToCart={(productId) => handleAddToCart( productId)} 
+              />
             ))}
           </div>
         </section>
