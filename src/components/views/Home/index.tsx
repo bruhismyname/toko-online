@@ -1,94 +1,154 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Store, ArrowRight } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
-import Navbar from "@/components/fragment/navbar";
-import ProductCard from "@/components/fragment/product-card";
+import Logo from "@/components/common/Logo";
 
-const HomePage = () => {
-  const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+/** --- Mock data (DB-shaped) untuk showcase Converse --- */
+type Category = { id: number; name: string; image_url: string };
+type Product = {
+  id: number;
+  name: string;
+  price: number;
+  category_id: number;
+  image_url: string;
+};
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+const CATEGORIES: Category[] = [
+  {
+    id: 1,
+    name: "Classic Chuck",
+    image_url:
+      "https://www.converse.co.th/en/media/wysiwyg/MB_classic-chuck-category.jpg",
+  },
+  {
+    id: 2,
+    name: "Chuck 70",
+    image_url: "https://www.converse.co.th/en/media/wysiwyg/DT_chuck-70.jpg",
+  },
+  {
+    id: 3,
+    name: "Slip-On & Sandal",
+    image_url: "https://www.converse.id/media/catalog/category/slip-on_1.jpg",
+  },
+  {
+    id: 4,
+    name: "Skateboarding",
+    image_url:
+      "https://www.converse.id/media/catalog/category/Skateboarding_3.jpg",
+  },
+  {
+    id: 5,
+    name: "Basketball",
+    image_url:
+      "https://www.converse.id/media/catalog/category/Basketball_1.jpg",
+  },
+];
 
-  const getAllProducts = async () => {
-    try {
-      const res = await fetch("/api/products");
-      if (!res.ok) throw new Error("Failed to fetch products");
-      const data = await res.json();
-      setProducts(data.slice(0, 5)); // ambil 5 produk saja
-    } catch (err) {
-      console.error("Error fetching products:", err);
-    }
-  };
+const FEATURED: Product[] = [
+  {
+    id: 101,
+    name: "Chuck Taylor All Star Classic High Top",
+    price: 799000,
+    category_id: 1,
+    image_url:
+      "https://www.converse.id/media/catalog/product/cache/9f24855fac20eb8d4a46102f0f20e4a1/0/8/0888-CONA18926CDGN09H-1.jpg",
+  },
+  {
+    id: 102,
+    name: "Converse CONS Louie Lopez Pro",
+    price: 999000,
+    category_id: 2,
+    image_url: "/images/cons-louie-lopez.jpg",
+  },
+  {
+    id: 103,
+    name: "Converse All Star BB Prototype CX",
+    price: 1299000,
+    category_id: 3,
+    image_url: "/images/bb-prototype-cx.jpg",
+  },
+];
 
-  const getAllCategories = async () => {
-    try {
-      const res = await fetch("/api/categories");
-      if (!res.ok) throw new Error("Failed to fetch categories");
-      const data = await res.json();
-      setCategories(data.slice(0, 3)); // ambil 3 kategori saja
-    } catch (err) {
-      console.error("Error fetching categories:", err);
-    }
-  };
+const catName = (id: number) =>
+  CATEGORIES.find((c) => c.id === id)?.name ?? "-";
+const currency = (n: number) =>
+  n.toLocaleString("en-US", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  });
 
-  useEffect(() => {
-    getAllProducts();
-    getAllCategories();
-  }, []);
+/** --- Minimal product card (Category · Name · Price) --- */
+const ProductCard = ({ p }: { p: Product }) => (
+  <Link
+    href={`/products/${p.id}`}
+    className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg transition hover:shadow-xl"
+  >
+    <div className="relative aspect-[4/3] bg-gray-50">
+      <Image src={p.image_url} alt={p.name} fill className="object-cover" />
+    </div>
+    <div className="px-4 pb-4 pt-3">
+      <p className="text-xs text-gray-500">{catName(p.category_id)}</p>
+      <h3 className="mt-1 line-clamp-2 text-base font-semibold text-gray-900">
+        {p.name}
+      </h3>
+      <p className="mt-2 text-lg font-bold text-gray-900">
+        {currency(p.price)}
+      </p>
+      <span className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-gray-900">
+        View <ArrowRight className="h-4 w-4" />
+      </span>
+    </div>
+  </Link>
+);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollBy({
-          left: scrollRef.current.clientWidth,
-          behavior: "smooth",
-        });
-        if (
-          scrollRef.current.scrollLeft + scrollRef.current.clientWidth >=
-          scrollRef.current.scrollWidth
-        ) {
-          scrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
-        }
-      }
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [products]);
-
+const HomeView = () => {
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* HEADER */}
-      <Navbar />
-
       {/* HERO */}
-      <section className="border-b border-gray-200 bg-white">
-        <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-8 px-4 py-10 md:grid-cols-2">
+      <section className="border-b border-gray-200 bg-black text-white">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-8 px-4 py-16 md:grid-cols-2">
           <div>
-            <h1 className="text-4xl font-extrabold leading-tight text-gray-900 md:text-5xl">
-              Shoes that go the distance.
+            <h1 className="text-4xl font-extrabold leading-tight md:text-5xl">
+              THE ICON THAT
               <br />
-              <span className="underline decoration-black">Style that comes closer.</span>
+              <span className="underline decoration-white">
+                NEVER STOPS EVOLVING
+              </span>
             </h1>
-            <p className="mt-4 max-w-xl text-gray-600">
-              Premium running, basketball, and lifestyle sneakers. Lightweight materials,
-              responsive cushioning, modern and minimal look.
+            <p className="mt-4 max-w-xl text-gray-300">
+              Temukan koleksi sepatu Converse premium dari Chuck Taylor, Chuck
+              70, hingga One Star dengan kualitas terbaik dan gaya klasik yang
+              tak lekang oleh waktu.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/products" className="rounded-lg bg-black px-4 py-2 font-semibold text-white hover:bg-gray-800">Shop now</Link>
-              <Link href="/products?sort=Highest%20Price" className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 hover:bg-gray-100">Explore collection</Link>
+              <Link
+                href="/products"
+                className="rounded-lg bg-white px-4 py-2 font-semibold text-black hover:bg-gray-200"
+              >
+                Belanja Sekarang
+              </Link>
+              <Link
+                href="/products?sort=Highest%20Price"
+                className="rounded-lg border border-gray-500 bg-transparent px-4 py-2 text-white hover:bg-gray-900"
+              >
+                Lihat Koleksi
+              </Link>
             </div>
           </div>
+
           <div className="relative">
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-lg">
-              <Image
-                src="/images/hero-shoe.jpg"
-                alt="Featured shoe"
-                width={900}
-                height={700}
+            <div className="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900 shadow-lg">
+              <video
+                src="https://www.converse.id/media/CON_SHAI-001-LAUNCH_FamilyLaunch_15sec_16x9_250923_v01A_H264.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
                 className="h-full w-full object-cover"
-                priority
-              />
+              >
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
         </div>
@@ -96,17 +156,23 @@ const HomePage = () => {
 
       {/* CATEGORIES */}
       <section className="mx-auto max-w-6xl px-4 py-10">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Shop by Category</h2>
-          <Link href="/products" className="text-sm text-gray-700 hover:text-black">View all</Link>
+        <div className="mb-8 text-center">
+          <h2 className="text-2xl font-bold text-gray-900">KOLEKSI CONVERSE</h2>
+          <p className="mt-2 text-gray-600">
+            Temukan gaya yang sesuai dengan kepribadian Anda
+          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {categories.map((c) => (
-            <Link key={c.id} href={`/products?category_id=${c.id}`} className="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md">
+          {CATEGORIES.map((c) => (
+            <Link
+              key={c.id}
+              href={`/products?category_id=${c.id}`}
+              className="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md"
+            >
               <div className="relative aspect-[16/10]">
                 <Image
-                  src={c.image_url || "/images/placeholder.jpg"}
+                  src={c.image_url}
                   alt={c.name}
                   fill
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -121,38 +187,59 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* FEATURED PRODUCTS CAROUSEL */}
+      {/* FEATURED */}
       <section className="mx-auto max-w-6xl px-4 pb-14">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Featured</h2>
-          <Link href="/products" className="text-sm text-gray-700 hover:text-black">See more</Link>
+          <h2 className="text-xl font-bold text-gray-900">PRODUK UNGGULAN</h2>
+          <Link
+            href="/products"
+            className="text-sm text-gray-700 hover:text-black"
+          >
+            Lihat Semua
+          </Link>
         </div>
 
-        <div
-          ref={scrollRef}
-          className="flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory no-scrollbar"
-        >
-          {products.map((p) => (
-            <div key={p.id} className="snap-start min-w-[300px] sm:min-w-[350px]">
-              <ProductCard p={p} />
-            </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURED.map((p) => (
+            <ProductCard key={p.id} p={p} />
           ))}
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="border-t border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-6 text-sm text-gray-600 md:flex-row">
-          <p>© {new Date().getFullYear()} ShoeStore. All rights reserved.</p>
-          <div className="flex gap-4">
-            <Link href="/privacy" className="hover:text-black">Privacy</Link>
-            <Link href="/terms" className="hover:text-black">Terms</Link>
-            <Link href="/contact" className="hover:text-black">Contact</Link>
+      {/* CONVERSE STORY */}
+      <section className="bg-gray-100 py-12">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                KENAPA MEMILIH CONVERSE?
+              </h2>
+              <p className="mt-4 text-gray-600">
+                Sejak 1908, Converse telah menjadi bagian dari budaya populer
+                selama lebih dari 100 tahun. Dengan desain klasik dan kualitas
+                yang tahan lama, sepatu Converse adalah pilihan sempurna untuk
+                ekspresi gaya pribadi Anda.
+              </p>
+              <p className="mt-4 text-gray-600">
+                Di Bakul Converse, kami menawarkan koleksi sepatu Converse
+                terlengkap dengan harga terbaik dan kualitas yang terjamin.
+              </p>
+            </div>
+            <div className="relative h-64 overflow-hidden rounded-xl bg-gray-200 md:h-80">
+              <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+                <Image
+                  src="https://i.ytimg.com/vi/mFzWEf-biCM/maxresdefault.jpg"
+                  alt="Converse History"
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </footer>
+      </section>
     </main>
   );
 };
 
-export default HomePage;
+export default HomeView;

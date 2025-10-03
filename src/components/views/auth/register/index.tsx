@@ -2,6 +2,7 @@ import Router from "next/router";
 import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Store, User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import Logo from "@/components/common/Logo"; // Import Logo
 
 const RegisterView = () => {
   const [form, setForm] = useState({
@@ -29,7 +30,7 @@ const RegisterView = () => {
     setLoading(true);
 
     if (form.password !== form.confirmPassword) {
-      setError("Password dan Confirm Password tidak sama!");
+      setError("Password dan Konfirmasi Password tidak sama!");
       setLoading(false);
       return;
     }
@@ -50,7 +51,7 @@ const RegisterView = () => {
       const json = await res.json();
 
       if (!res.ok) {
-        throw new Error(json.message || "Register failed");
+        throw new Error(json.message || "Registrasi gagal");
       }
 
       alert("Registrasi berhasil!");
@@ -66,15 +67,18 @@ const RegisterView = () => {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
         <div className="mb-6 flex items-center justify-between">
-          <Link href="/" className="flex items-center text-gray-500 hover:text-black">
+          <Link
+            href="/"
+            className="flex items-center text-gray-500 hover:text-black"
+          >
             <ArrowLeft className="mr-1 h-4 w-4" />
-            Back
+            Kembali
           </Link>
-          <Store className="h-6 w-6 text-black" />
+          <Logo showText={false} />
         </div>
 
         <h2 className="mb-6 text-center text-2xl font-bold text-gray-800">
-          Create Account
+          Daftar Akun <br /> Bakul Converse
         </h2>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
@@ -87,7 +91,7 @@ const RegisterView = () => {
               value={form.name}
               onChange={handleChange}
               required
-              placeholder="Full Name"
+              placeholder="Nama Lengkap"
               className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
             />
           </div>
@@ -101,7 +105,7 @@ const RegisterView = () => {
               value={form.email}
               onChange={handleChange}
               required
-              placeholder="you@example.com"
+              placeholder="Email"
               className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
             />
           </div>
@@ -123,7 +127,11 @@ const RegisterView = () => {
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
             >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
             </button>
           </div>
 
@@ -135,7 +143,7 @@ const RegisterView = () => {
               value={form.confirmPassword}
               onChange={handleChange}
               required
-              placeholder="Confirm Password"
+              placeholder="Konfirmasi Password"
               className="w-full rounded-lg border border-gray-300 pl-10 pr-10 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
             />
             <button
@@ -143,7 +151,11 @@ const RegisterView = () => {
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
             >
-              {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              {showConfirmPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
             </button>
           </div>
 
@@ -154,14 +166,17 @@ const RegisterView = () => {
             disabled={loading}
             className="w-full rounded-lg bg-black px-4 py-2 font-semibold text-white transition hover:bg-gray-800 disabled:opacity-70"
           >
-            {loading ? "Loading..." : "Register"}
+            {loading ? "Memproses..." : "Daftar"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500">
-          Already have an account?{" "}
-          <Link href="/auth/login" className="font-medium text-black hover:underline">
-            Login
+          Sudah punya akun?{" "}
+          <Link
+            href="/auth/login"
+            className="font-medium text-black hover:underline"
+          >
+            Masuk
           </Link>
         </p>
       </div>
