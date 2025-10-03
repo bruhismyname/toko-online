@@ -3,18 +3,10 @@ import Image from "next/image";
 import { Plus } from "lucide-react";
 import Product from "@/components/types/product";
 
-const currency = (n: number) =>
-  n.toLocaleString("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  });
-
 type ProductCardProps = {
   p: Product;
   onAddToCart?: (productId: number) => void; 
 };
-
 
 const ProductCard = ({ p, onAddToCart }: ProductCardProps) => {
   console.log(p);
@@ -36,7 +28,7 @@ const ProductCard = ({ p, onAddToCart }: ProductCardProps) => {
           {p.name}
         </h3>
         <p className="mt-2 text-lg font-bold text-gray-900">
-          {currency(p.price)}
+          Rp {Number(p.price).toLocaleString("id-ID")}
         </p>
 
         <div className="mt-3 flex items-center gap-2">
