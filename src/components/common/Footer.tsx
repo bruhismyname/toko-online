@@ -63,40 +63,9 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Categories */}
-          <div>
-            <h3 className="font-bold text-lg mb-4">Kategori Sepatu</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  href="/category/classic-chuck"
-                  className="text-gray-300 hover:text-white"
-                >
-                  Classic Chuck
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/category/double-stack"
-                  className="text-gray-300 hover:text-white"
-                >
-                  Double Stack
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/category/run-star-trainer"
-                  className="text-gray-300 hover:text-white"
-                >
-                  Run Star Trainer
-                </Link>
-              </li>
-            </ul>
-          </div>
-
           {/* Quick Links */}
           <div>
-            <h3 className="font-bold text-lg mb-4">Tautan</h3>
+            <h3 className="font-bold text-lg mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
                 <Link href="/about" className="text-gray-300 hover:text-white">
@@ -135,16 +104,59 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Newsletter & Contact Information */}
-          <div>
-            <h3 className="font-bold text-lg mb-4">Kontak</h3>
-            <ul className="space-y-2 text-gray-300">
-              <li className="flex items-center">
-                <Mail className="h-4 w-4 mr-2" /> info@bakulconverse.com
-              </li>
-              <li>Telepon: (021) 1234-5678</li>
-              <li>Alamat: Jl. Sepatu No.123, Jakarta</li>
-            </ul>
+          {/* Newsletter & Contact Information - Spans 2 columns */}
+          <div className="md:col-span-2">
+            <h3 className="font-bold text-lg mb-4">Kontak & Newsletter</h3>
+
+            <div className="flex flex-col md:flex-row md:space-x-6">
+              {/* Form Newsletter */}
+              <div className="md:w-1/2 mb-4 md:mb-0">
+                <form
+                  onSubmit={handleSubscribe}
+                  className="p-3 border border-gray-700 rounded-md bg-gray-900 h-full"
+                >
+                  <p className="text-sm text-white font-medium mb-3">
+                    Dapatkan info produk & diskon terbaru:
+                  </p>
+                  <div className="flex">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Email Anda"
+                      className="px-3 py-2.5 text-black text-sm rounded-l-md w-full bg-white border-0 focus:ring-2 focus:ring-red-600"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      className="bg-gray-800 text-white px-4 py-2.5 text-sm font-semibold rounded-r-md hover:bg-gray-700 transition-colors"
+                    >
+                      Daftar
+                    </button>
+                  </div>
+                  {subscribed && (
+                    <p className="text-green-400 text-xs mt-2 flex items-center">
+                      <span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+                      Terima kasih! Email Anda telah terdaftar.
+                    </p>
+                  )}
+                </form>
+              </div>
+
+              {/* Contact Information */}
+              <div className="md:w-1/2">
+                <ul className="space-y-2 text-gray-300">
+                  <li className="flex items-center">
+                    <Mail className="h-4 w-4 mr-2" /> info@bakulconverse.com
+                  </li>
+                  <li>Telepon: (021) 1234-5678</li>
+                  <li>
+                    Alamat: Jl. Prof. H. Soedarto, SH, Kampus Tembalang, Kota
+                    Semarang, Jawa Tengah
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
 
