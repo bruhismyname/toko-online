@@ -3,7 +3,6 @@ import Image from "next/image";
 import { Store, ArrowRight } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import Logo from "@/components/common/Logo";
-import Navbar from "@/components/common/Navbar";
 
 /** --- Mock data (DB-shaped) untuk showcase Converse --- */
 type Category = { id: number; name: string; image_url: string };
@@ -116,9 +115,6 @@ const HomeView = () => {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* HEADER */}
-      <Navbar />
-
       {/* HERO */}
       <section className="border-b border-gray-200 bg-black text-white">
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-8 px-4 py-16 md:grid-cols-2">
