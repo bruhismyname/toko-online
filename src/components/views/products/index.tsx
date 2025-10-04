@@ -6,7 +6,6 @@ import { Store, Search, Filter, Plus } from "lucide-react";
 import Product from "@/components/types/product";
 import Category from "@/components/types/category";
 import ProductCard from "@/components/fragment/product-card";
-import Navbar from "@/components/fragment/navbar";
 
 const ProductsView = () => {
   const router = useRouter();
@@ -15,12 +14,14 @@ const ProductsView = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [query, setQuery] = useState("");
   const [categoryId, setCategoryId] = useState<number | "all">("all");
-  const [sort, setSort] = useState<"Name A-Z" | "Name Z-A" | "Lowest Price" | "Highest Price">("Name A-Z");
+  const [sort, setSort] = useState<
+    "Name A-Z" | "Name Z-A" | "Lowest Price" | "Highest Price"
+  >("Name A-Z");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
 
-  console.log(allProducts)
+  console.log(allProducts);
 
   const getAllProducts = async () => {
     setLoading(true);
@@ -47,7 +48,7 @@ const ProductsView = () => {
     } finally {
       setLoading(false);
     }
-  }; 
+  };
 
   useEffect(() => {
     getAllProducts();
@@ -66,10 +67,17 @@ const ProductsView = () => {
     }
 
     switch (sort) {
-      case "Name Z-A":      data.sort((a, b) => b.name.localeCompare(a.name)); break;
-      case "Lowest Price":  data.sort((a, b) => a.price - b.price); break;
-      case "Highest Price": data.sort((a, b) => b.price - a.price); break;
-      default:              data.sort((a, b) => a.name.localeCompare(b.name));
+      case "Name Z-A":
+        data.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case "Lowest Price":
+        data.sort((a, b) => a.price - b.price);
+        break;
+      case "Highest Price":
+        data.sort((a, b) => b.price - a.price);
+        break;
+      default:
+        data.sort((a, b) => a.name.localeCompare(b.name));
     }
 
     return data;
@@ -93,38 +101,35 @@ const ProductsView = () => {
       setUser(null);
     }
   };
-  
 
-  const handleAddToCart = async ( product_id : number) => {
+  const handleAddToCart = async (product_id: number) => {
     if (user === null) {
       router.push("/auth/login");
     } else {
-        try {
+      try {
         const res = await fetch("/api/cart", {
-          method : "POST" , 
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ product_id }),
           credentials: "include",
-        })
+        });
 
         if (res.ok) {
-          const json = await res.json()
-          alert(json.message)
+          const json = await res.json();
+          alert(json.message);
         }
       } catch (error) {
         console.log("Error adding to cart:", error);
       }
     }
-  }
+  };
 
-  console.log(user)
+  console.log(user);
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <Navbar />
-
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-8 md:grid-cols-12">
         <aside className="md:col-span-4 lg:col-span-3">
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
@@ -156,7 +161,10 @@ const ProductsView = () => {
                   All Shoes
                 </label>
                 {categories.map((c) => (
-                  <label key={c.id} className="flex cursor-pointer items-center gap-2 text-sm text-gray-800">
+                  <label
+                    key={c.id}
+                    className="flex cursor-pointer items-center gap-2 text-sm text-gray-800"
+                  >
                     <input
                       type="radio"
                       name="category"
@@ -189,7 +197,9 @@ const ProductsView = () => {
         <section className="md:col-span-8 lg:col-span-9">
           <div className="mb-4">
             <h1 className="text-2xl font-bold text-gray-900">All Shoes</h1>
-            <p className="text-sm text-gray-600">Find your next pair: running, basketball, lifestyle, and more.</p>
+            <p className="text-sm text-gray-600">
+              Find your next pair: running, basketball, lifestyle, and more.
+            </p>
           </div>
 
           {loading && <p>Loading products...</p>}
@@ -197,10 +207,10 @@ const ProductsView = () => {
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((p) => (
-              <ProductCard 
-                key={p.id} 
-                p={p} 
-                onAddToCart={(productId) => handleAddToCart( productId)} 
+              <ProductCard
+                key={p.id}
+                p={p}
+                onAddToCart={(productId) => handleAddToCart(productId)}
               />
             ))}
           </div>
