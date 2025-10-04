@@ -1,7 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Store, ArrowRight } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import Logo from "@/components/common/Logo";
+import Navbar from "@/components/common/Navbar";
 
 /** --- Mock data (DB-shaped) untuk showcase Converse --- */
 type Category = { id: number; name: string; image_url: string };
@@ -44,31 +46,6 @@ const CATEGORIES: Category[] = [
   },
 ];
 
-const FEATURED: Product[] = [
-  {
-    id: 101,
-    name: "Chuck Taylor All Star Classic High Top",
-    price: 799000,
-    category_id: 1,
-    image_url:
-      "https://www.converse.id/media/catalog/product/cache/9f24855fac20eb8d4a46102f0f20e4a1/0/8/0888-CONA18926CDGN09H-1.jpg",
-  },
-  {
-    id: 102,
-    name: "Converse CONS Louie Lopez Pro",
-    price: 999000,
-    category_id: 2,
-    image_url: "/images/cons-louie-lopez.jpg",
-  },
-  {
-    id: 103,
-    name: "Converse All Star BB Prototype CX",
-    price: 1299000,
-    category_id: 3,
-    image_url: "/images/bb-prototype-cx.jpg",
-  },
-];
-
 const catName = (id: number) =>
   CATEGORIES.find((c) => c.id === id)?.name ?? "-";
 const currency = (n: number) =>
@@ -103,8 +80,45 @@ const ProductCard = ({ p }: { p: Product }) => (
 );
 
 const HomeView = () => {
+  // State untuk menyimpan produk unggulan dari database
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch produk unggulan dari API
+  useEffect(() => {
+    const fetchFeaturedProducts = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch("/api/products/featured");
+
+        if (!res.ok) {
+          // Log error untuk debugging
+          const errorData = await res.json().catch(() => ({}));
+          console.error("API response error:", errorData);
+          throw new Error(
+            errorData.message || "Gagal mengambil data produk unggulan"
+          );
+        }
+
+        const data = await res.json();
+        setFeaturedProducts(data);
+      } catch (error) {
+        console.error("Error fetching featured products:", error);
+        // Set default empty array on error
+        setFeaturedProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedProducts();
+  }, []);
+
   return (
     <main className="min-h-screen bg-gray-50">
+      {/* HEADER */}
+      <Navbar />
+
       {/* HERO */}
       <section className="border-b border-gray-200 bg-black text-white">
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-8 px-4 py-16 md:grid-cols-2">
@@ -187,7 +201,7 @@ const HomeView = () => {
         </div>
       </section>
 
-      {/* FEATURED */}
+      {/* FEATURED PRODUCTS - Menggunakan data dari API */}
       <section className="mx-auto max-w-6xl px-4 pb-14">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">PRODUK UNGGULAN</h2>
@@ -199,11 +213,34 @@ const HomeView = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURED.map((p) => (
-            <ProductCard key={p.id} p={p} />
-          ))}
-        </div>
+        {loading ? (
+          // Loading state
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="animate-pulse rounded-2xl border border-gray-200 bg-white p-4"
+              >
+                <div className="aspect-[4/3] bg-gray-200 rounded-lg mb-3"></div>
+                <div className="h-3 bg-gray-200 rounded mb-2 w-1/4"></div>
+                <div className="h-5 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+              </div>
+            ))}
+          </div>
+        ) : featuredProducts.length === 0 ? (
+          // No products found
+          <div className="text-center py-8">
+            <p className="text-gray-500">Belum ada produk unggulan.</p>
+          </div>
+        ) : (
+          // Display products
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredProducts.map((p) => (
+              <ProductCard key={p.id} p={p} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* CONVERSE STORY */}
