@@ -5,11 +5,14 @@ import { NextApiRequest, NextApiResponse } from "next";
 async function handler(req: NextApiRequest & { user?: any }, res: NextApiResponse) {
   if (req.method === "GET") {
     let { id } = req.query;
+    console.log(id);
     if (Array.isArray(id)) id = id[0];
     if (!id) return res.status(400).json({ message: "id is required" });
 
     const userId = parseInt(id as string, 10);
     if (isNaN(userId)) return res.status(400).json({ message: "id must be a number" });
+
+    console.log(userId)
 
     try {
       const cartsRes = await RetrieveDataWithJoin(

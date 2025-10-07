@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ShoppingCart } from "lucide-react";
+import Link from "next/link";
 
 type ProductViewProps = {
   id: string;
@@ -132,7 +133,7 @@ const DetailProductView = ({ id }: ProductViewProps) => {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <label className="text-sm font-semibold">Select Size</label>
-                <button className="text-sm underline">Size Guide</button>
+                <Link href="/size-guide" className="text-sm underline">Size Guide</Link>
               </div>
 
               <div className="grid grid-cols-5 gap-2">
