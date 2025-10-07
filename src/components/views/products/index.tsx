@@ -102,31 +102,8 @@ const ProductsView = () => {
     }
   };
 
-  const handleAddToCart = async (product_id: number) => {
-    if (user === null) {
-      router.push("/auth/login");
-    } else {
-      try {
-        const res = await fetch("/api/cart", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ product_id }),
-          credentials: "include",
-        });
 
-        if (res.ok) {
-          const json = await res.json();
-          alert(json.message);
-        }
-      } catch (error) {
-        console.log("Error adding to cart:", error);
-      }
-    }
-  };
 
-  console.log(user);
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -210,7 +187,6 @@ const ProductsView = () => {
               <ProductCard
                 key={p.id}
                 p={p}
-                onAddToCart={(productId) => handleAddToCart(productId)}
               />
             ))}
           </div>

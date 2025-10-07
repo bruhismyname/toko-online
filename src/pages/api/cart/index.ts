@@ -16,7 +16,7 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
         "carts",
         "cart_items",
         ["id", "user_id", "created_at"],
-        ["id", "product_id", "qty", "products(*)"], // ambil products langsung
+        ["id", "product_id", "stock_id" ,"qty", "products(*) , stocks(*)"], 
         { user_id: userId }
       );
 
@@ -30,9 +30,12 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
           id: item.id,
           qty: item.qty,
           product: item.products,
-          image: item.products.image_url || "", // langsung ambil dari products
+          stock: item.stocks,
+          image: item.products.image_url 
         })),
       }));
+
+      console.log(cartsWithImages);
 
       return res.status(200).json({ data: cartsWithImages });
     } catch (error) {
@@ -41,9 +44,8 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
     }
   }
 
-  // ✅ Tambah ke cart
   else if (req.method === "POST") {
-    const { product_id } = req.body;
+    const { product_id , stock_id } = req.body;
     const user_id = req.user.id;
 
     const isCartExist = await RetrieveDataByField("carts", { user_id });
@@ -61,6 +63,7 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
     const { data: existingItem, error: itemError } = await RetrieveDataByField("cart_items", {
       cart_id: cartId,
       product_id,
+      stock_id
     });
     if (itemError) return res.status(500).json({ message: "Error checking cart items" });
 
@@ -74,6 +77,7 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
       const { error: addError } = await addData("cart_items", {
         cart_id: cartId,
         product_id,
+        stock_id,
         qty: 1,
       });
       if (addError) return res.status(500).json({ message: "Error adding product to cart" });
@@ -82,13 +86,13 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
     return res.status(200).json({ message: "Success adding to cart" });
   }
 
-  // ✅ Update qty
   else if (req.method === "PUT") {
-    const { cart_id, product_id, action } = req.body;
+    const { cart_id, product_id, stock_id, action } = req.body;
 
     const { data: existingItem, error: itemError } = await RetrieveDataByField("cart_items", {
       cart_id,
       product_id,
+      stock_id
     });
     if (itemError) return res.status(500).json({ message: "Error checking cart items" });
     if (existingItem.length === 0) return res.status(404).json({ message: "Item not found in cart" });
@@ -107,25 +111,25 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
       return res.status(400).json({ message: "Invalid action" });
     }
 
-    // ambil cart terbaru
     const cartsRes = await RetrieveDataWithJoin(
       "carts",
       "cart_items",
       ["id", "user_id", "created_at"],
-      ["id", "product_id", "qty", "products(*)"],
+      ["id", "product_id", "stock_id", "qty", "products(*), stocks(*)"],
       { id: cart_id }
     );
     if (cartsRes.error) return res.status(500).json({ message: "Error fetching updated cart" });
 
     const cartsWithImages = cartsRes.data.map((cart: any) => ({
       id: cart.id,
-      user_id: cart.user_id,
-      created_at: cart.created_at,
-      cart_items: cart.cart_items.map((item: any) => ({
-        id: item.id,
-        qty: item.qty,
-        product: item.products,
-        image: item.products.image_url || "",
+        user_id: cart.user_id,
+        created_at: cart.created_at,
+        cart_items: cart.cart_items.map((item: any) => ({
+          id: item.id,
+          qty: item.qty,
+          product: item.products,
+          stock: item.stocks,
+          image: item.products.image_url || "",
       })),
     }));
 
@@ -134,11 +138,12 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
 
   // ✅ Delete item
   else if (req.method === "DELETE") {
-    const { cart_id, product_id } = req.body;
+    const { cart_id, product_id , stock_id } = req.body;
 
     const { data: existingItem, error: itemError } = await RetrieveDataByField("cart_items", {
       cart_id,
       product_id,
+      stock_id
     });
     if (itemError) return res.status(500).json({ message: "Error checking cart items" });
     if (existingItem.length === 0) return res.status(404).json({ message: "Item not found in cart" });
@@ -151,20 +156,21 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
       "carts",
       "cart_items",
       ["id", "user_id", "created_at"],
-      ["id", "product_id", "qty", "products(*)"],
+      ["id", "product_id",  "stock_id", "qty", "products(*) , stocks(*)"],
       { id: cart_id }
     );
     if (cartsRes.error) return res.status(500).json({ message: "Error fetching updated cart" });
 
     const cartsWithImages = cartsRes.data.map((cart: any) => ({
       id: cart.id,
-      user_id: cart.user_id,
-      created_at: cart.created_at,
-      cart_items: cart.cart_items.map((item: any) => ({
-        id: item.id,
-        qty: item.qty,
-        product: item.products,
-        image: item.products.image_url || "",
+        user_id: cart.user_id,
+        created_at: cart.created_at,
+        cart_items: cart.cart_items.map((item: any) => ({
+          id: item.id,
+          qty: item.qty,
+          product: item.products,
+          stock: item.stocks,
+          image: item.products.image_url 
       })),
     }));
 
