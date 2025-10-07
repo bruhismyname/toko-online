@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: "Semua field wajib diisi" });
     }
 
-    const existing = await RetrieveDataByField("users", "email", email);
+    const existing = await RetrieveDataByField("users", { email });
     if (existing.error) {
       console.error("Supabase error:", existing.error);
       return res.status(500).json({ message: "Gagal mengecek email" });

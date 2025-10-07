@@ -1,7 +1,7 @@
-import ProductsPage from "@/components/views/products";
+import ProductsView from "@/components/views/products";
 
-const Products = () => {
-  return <ProductsPage />;
+const ProductPage = () => {
+    return <ProductsView />;
 };
 
-export default Products;
+export default ProductPage;

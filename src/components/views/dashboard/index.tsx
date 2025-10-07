@@ -1,10 +1,25 @@
 import { useRouter } from "next/router"
 import {  useEffect, useState } from "react"
+import { getUserFromToken } from "@/lib/auth"
 
 const DashboardView = () => {
 
     const [user, setUser] = useState<any>(null)
+    const [role, setRole] = useState<string | null>(null)
     const router = useRouter()
+
+    useEffect(() => {
+        const user = getUserFromToken()
+        if (user) {
+            setUser(user)
+            setRole(user.role)
+            if (user.role !== "admin") {
+                router.push("/products")
+            }
+        } else {
+            router.push("/auth/login")
+        }
+    }, [router])
 
     const handleLogout = async () => {
         const res = await fetch("/api/logout", {
