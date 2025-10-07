@@ -60,14 +60,14 @@ const CartView = () => {
     console.log(user)
 
     const handleIncreaseQty = async (product_id : string , cart_id : string , stock_id : string) => {
-        console.log('Increase qty for item:', product_id, cart_id)
+        console.log('Increase qty for item:', product_id, cart_id, stock_id)
         try {
             const res = await fetch(`/api/cart`, {
                 method: "PUT" , 
                 headers: {
                     "Content-Type": "application/json",
                 } , 
-                body: JSON.stringify({ product_id, cart_id , action : 'increase' }),
+                body: JSON.stringify({ product_id, cart_id , stock_id , action : 'increase' }),
                 credentials: "include",
             })
             if (res.ok) {
@@ -79,7 +79,7 @@ const CartView = () => {
         }
     }
 
-    const handleDecreaseQty = async (product_id: string , cart_id: string) => {
+    const handleDecreaseQty = async (product_id: string , cart_id: string, stock_id: string) => {
         console.log('Decrease qty for item:', product_id, cart_id)
 
         try {
@@ -88,7 +88,7 @@ const CartView = () => {
                 headers: {
                     "Content-Type": "application/json",
                 } , 
-                body: JSON.stringify({ product_id, cart_id , action : 'decrease' }),
+                body: JSON.stringify({ product_id, cart_id , stock_id , action : 'decrease' }),
                 credentials: "include",
             }) 
             if (res.ok) {
@@ -101,7 +101,7 @@ const CartView = () => {
 
     }
 
-    const handleDelete = async (product_id: string , cart_id: string) => {
+    const handleDelete = async (product_id: string , cart_id: string, stock_id: string) => {
         console.log('Delete item:', product_id, cart_id)
 
         try {
@@ -110,7 +110,7 @@ const CartView = () => {
                 headers: {
                     "Content-Type": "application/json",
                 } , 
-                body: JSON.stringify({ product_id, cart_id }),
+                body: JSON.stringify({ product_id, stock_id ,  cart_id }),
                 credentials: "include",
             })
 
@@ -132,7 +132,6 @@ const CartView = () => {
 
     console.log(user)
     console.log(cart)
-    console.log(cart[0].cart_items[0].stock.id)
     
 
     return (
@@ -179,7 +178,7 @@ const CartView = () => {
                                                         <div className="flex items-center gap-3 mt-4">
                                                             <span className="text-gray-700 font-medium">Quantity:</span>
                                                             <button
-                                                                onClick={() => handleDecreaseQty(item.product.id , cartId)}
+                                                                onClick={() => handleDecreaseQty(item.product.id , cartId, item.stock.id )}
                                                                 className="w-9 h-9 rounded-lg border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 hover:border-gray-400 transition font-semibold text-gray-700 text-lg"
                                                             >
                                                                 -
@@ -188,7 +187,7 @@ const CartView = () => {
                                                                 {item.qty}
                                                             </span>
                                                             <button
-                                                                onClick={() => handleIncreaseQty(item.product.id , cartId , )}
+                                                                onClick={() => handleIncreaseQty(item.product.id , cartId , item.stock.id )}
                                                                 className="w-9 h-9 rounded-lg border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 hover:border-gray-400 transition font-semibold text-gray-700 text-lg"
                                                             >
                                                                 +
@@ -199,7 +198,7 @@ const CartView = () => {
                                                     {/* Delete Button */}
                                                     <div className="mt-4">
                                                         <button
-                                                            onClick={() => handleDelete(item.product.id , cartId)}
+                                                            onClick={() => handleDelete(item.product.id , cartId , item.stock.id )}
                                                             className="text-red-500 hover:text-red-700 font-medium transition flex items-center gap-1"
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
