@@ -16,7 +16,7 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
         "carts",
         "cart_items",
         ["id", "user_id", "created_at"],
-        ["id", "product_id", "qty", "products(*)"], // ambil products langsung
+        ["id", "product_id", "stock_id" ,"qty", "products(*) , stocks(*)"], 
         { user_id: userId }
       );
 
@@ -30,9 +30,12 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
           id: item.id,
           qty: item.qty,
           product: item.products,
-          image: item.products.image_url || "", // langsung ambil dari products
+          stock: item.stocks,
+          image: item.products.image_url 
         })),
       }));
+
+      console.log(cartsWithImages);
 
       return res.status(200).json({ data: cartsWithImages });
     } catch (error) {
@@ -41,9 +44,8 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
     }
   }
 
-  // ✅ Tambah ke cart
   else if (req.method === "POST") {
-    const { product_id } = req.body;
+    const { product_id , stock_id } = req.body;
     const user_id = req.user.id;
 
     const isCartExist = await RetrieveDataByField("carts", { user_id });
@@ -61,6 +63,7 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
     const { data: existingItem, error: itemError } = await RetrieveDataByField("cart_items", {
       cart_id: cartId,
       product_id,
+      stock_id
     });
     if (itemError) return res.status(500).json({ message: "Error checking cart items" });
 
@@ -74,6 +77,7 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
       const { error: addError } = await addData("cart_items", {
         cart_id: cartId,
         product_id,
+        stock_id,
         qty: 1,
       });
       if (addError) return res.status(500).json({ message: "Error adding product to cart" });
@@ -82,7 +86,6 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
     return res.status(200).json({ message: "Success adding to cart" });
   }
 
-  // ✅ Update qty
   else if (req.method === "PUT") {
     const { cart_id, product_id, action } = req.body;
 

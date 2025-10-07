@@ -59,7 +59,7 @@ const CartView = () => {
     
     console.log(user)
 
-    const handleIncreaseQty = async (product_id : string , cart_id : string) => {
+    const handleIncreaseQty = async (product_id : string , cart_id : string , stock_id : string) => {
         console.log('Increase qty for item:', product_id, cart_id)
         try {
             const res = await fetch(`/api/cart`, {
@@ -132,6 +132,8 @@ const CartView = () => {
 
     console.log(user)
     console.log(cart)
+    console.log(cart[0].cart_items[0].stock.id)
+    
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -186,7 +188,7 @@ const CartView = () => {
                                                                 {item.qty}
                                                             </span>
                                                             <button
-                                                                onClick={() => handleIncreaseQty(item.product.id , cartId)}
+                                                                onClick={() => handleIncreaseQty(item.product.id , cartId , )}
                                                                 className="w-9 h-9 rounded-lg border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 hover:border-gray-400 transition font-semibold text-gray-700 text-lg"
                                                             >
                                                                 +
