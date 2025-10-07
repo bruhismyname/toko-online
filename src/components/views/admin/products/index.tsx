@@ -1,16 +1,22 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 
-/** ------- Types + mock selaras DB ------- */
+/** ------- Types + mock selaras DB (products + stocks) ------- */
 type Category = { id: number; name: string };
+
+type Variant = {
+  size: string;      // contoh: "38", "39", "40"
+  quantity: number;  // stok per size
+};
+
 type Product = {
   id: number;
   name: string;
   price: number;          // DECIMAL -> number
-  stock: number;
   category_id: number;    // fk categories.id
   is_active: boolean;
   image_url: string;
+  variants: Variant[];    // menggantikan stok tunggal
 };
 
 const CATEGORIES: Category[] = [
@@ -18,12 +24,48 @@ const CATEGORIES: Category[] = [
   { id: 2, name: "Double Stack" },
   { id: 3, name: "Run Star" },
   { id: 4, name: "Basketball" },
+  { id: 5, name: "Slip-On & Sandal" },
 ];
 
 const SEED: Product[] = [
-  { id: 1, name: "Chuck Taylor High", price: 1099000, stock: 100, category_id: 1, is_active: true, image_url: "" },
-  { id: 2, name: "CONS Louie Lopez", price: 999000, stock: 50, category_id: 2, is_active: true, image_url: "" },
-  { id: 3, name: "All Star BB CX", price: 1299000, stock: 30, category_id: 4, is_active: false, image_url: "" },
+  {
+    id: 1,
+    name: "Chuck Taylor All Star Hi Darkly Jaded",
+    price: 1099000,
+    category_id: 1,
+    is_active: true,
+    image_url: "",
+    variants: [
+      { size: "38", quantity: 10 },
+      { size: "39", quantity: 8 },
+      { size: "40", quantity: 6 },
+    ],
+  },
+  {
+    id: 2,
+    name: "CONS Louie Lopez Pro 2 Suede Low Black",
+    price: 1499000,
+    category_id: 3,
+    is_active: true,
+    image_url: "",
+    variants: [
+      { size: "41", quantity: 12 },
+      { size: "42", quantity: 10 },
+    ],
+  },
+  {
+    id: 3,
+    name: "All Star BB Prototype CX",
+    price: 2099000,
+    category_id: 4,
+    is_active: false,
+    image_url: "",
+    variants: [
+      { size: "40", quantity: 3 },
+      { size: "41", quantity: 2 },
+      { size: "42", quantity: 1 },
+    ],
+  },
 ];
 
 const currency = (n: number) =>
@@ -65,20 +107,20 @@ function AdminProductsView() {
     id: number;
     name: string;
     price: string; // string supaya bisa kosong dulu
-    stock: string;
     category_id: number;
     is_active: boolean;
     image_url: string;
+    variants: { size: string; quantity: string }[]; // string agar mudah input
   };
 
   const emptyDraft: Draft = {
     id: 0,
     name: "",
     price: "",
-    stock: "",
     category_id: CATEGORIES[0].id,
     is_active: true,
     image_url: "",
+    variants: [{ size: "38", quantity: "0" }],
   };
 
   const [open, setOpen] = useState(false);
@@ -96,10 +138,10 @@ function AdminProductsView() {
       id: p.id,
       name: p.name,
       price: String(p.price),
-      stock: String(p.stock),
       category_id: p.category_id,
       is_active: p.is_active,
       image_url: p.image_url,
+      variants: p.variants.map((v) => ({ size: v.size, quantity: String(v.quantity) })),
     });
     setOpen(true);
   }
@@ -111,12 +153,34 @@ function AdminProductsView() {
     }, 150);
   }
 
+  function addVariantRow() {
+    setDraft((d) => ({ ...d, variants: [...d.variants, { size: "", quantity: "0" }] }));
+  }
+  function removeVariantRow(idx: number) {
+    setDraft((d) => ({ ...d, variants: d.variants.filter((_, i) => i !== idx) }));
+  }
+  function updateVariant(idx: number, field: "size" | "quantity", value: string) {
+    setDraft((d) => {
+      const arr = d.variants.slice();
+      arr[idx] = { ...arr[idx], [field]: field === "quantity" ? value.replace(/\D/g, "") : value };
+      return { ...d, variants: arr };
+    });
+  }
+
   function saveDraft(e: React.FormEvent) {
     e.preventDefault();
     const priceNum = Number(draft.price.replace(/\D/g, ""));
-    const stockNum = Number(draft.stock.replace(/\D/g, ""));
     if (!draft.name.trim()) return alert("Nama wajib diisi");
-    if (isNaN(priceNum) || isNaN(stockNum)) return alert("Harga/Stok tidak valid");
+    if (isNaN(priceNum)) return alert("Harga tidak valid");
+
+    // bersihkan variants: hapus baris kosong & ubah qty ke number
+    const cleanedVariants: Variant[] = draft.variants
+      .map((v) => ({ size: v.size.trim(), quantity: Number(v.quantity || "0") }))
+      .filter((v) => v.size !== "" && !Number.isNaN(v.quantity));
+
+    if (cleanedVariants.length === 0) {
+      return alert("Minimal satu variasi ukuran harus diisi.");
+    }
 
     if (editingId) {
       setProducts((prev) =>
@@ -126,10 +190,10 @@ function AdminProductsView() {
                 ...p,
                 name: draft.name,
                 price: priceNum,
-                stock: stockNum,
                 category_id: draft.category_id,
                 is_active: draft.is_active,
                 image_url: draft.image_url,
+                variants: cleanedVariants,
               }
             : p
         )
@@ -141,10 +205,10 @@ function AdminProductsView() {
           id: nextId,
           name: draft.name,
           price: priceNum,
-          stock: stockNum,
           category_id: draft.category_id,
           is_active: draft.is_active,
           image_url: draft.image_url,
+          variants: cleanedVariants,
         },
         ...prev,
       ]);
@@ -158,6 +222,8 @@ function AdminProductsView() {
       if (editingId === id) closeModal();
     }
   }
+
+  const totalStock = (p: Product) => p.variants.reduce((sum, v) => sum + (v.quantity || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -237,7 +303,7 @@ function AdminProductsView() {
                 </Td>
                 <Td>{catMap[p.category_id]}</Td>
                 <Td>{currency(p.price)}</Td>
-                <Td>{p.stock}</Td>
+                <Td>{totalStock(p)}</Td>
                 <Td>
                   <span
                     className={`rounded-full px-2 py-1 text-xs ${
@@ -279,7 +345,7 @@ function AdminProductsView() {
       {/* ---------- Modal ---------- */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b px-5 py-3">
               <h3 className="text-base font-bold text-gray-900">{editingId ? "Edit Produk" : "Tambah Produk"}</h3>
               <button onClick={closeModal} className="rounded-md px-2 py-1 text-gray-500 hover:bg-gray-100">
@@ -315,32 +381,20 @@ function AdminProductsView() {
                 </label>
 
                 <label className="block text-sm">
-                  <span className="mb-1 block text-xs font-medium text-gray-700">Stok</span>
-                  <input
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={draft.stock}
-                    onChange={(e) => setDraft({ ...draft, stock: e.target.value.replace(/\D/g, "") })}
+                  <span className="mb-1 block text-xs font-medium text-gray-700">Kategori</span>
+                  <select
+                    value={draft.category_id}
+                    onChange={(e) => setDraft({ ...draft, category_id: Number(e.target.value) })}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                    placeholder="0"
-                  />
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </div>
-
-              <label className="block text-sm">
-                <span className="mb-1 block text-xs font-medium text-gray-700">Kategori</span>
-                <select
-                  value={draft.category_id}
-                  onChange={(e) => setDraft({ ...draft, category_id: Number(e.target.value) })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
 
               <label className="block text-sm">
                 <span className="mb-1 block text-xs font-medium text-gray-700">URL Gambar</span>
@@ -352,7 +406,7 @@ function AdminProductsView() {
                 />
               </label>
 
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-2 text-sm pt-1">
                 <input
                   type="checkbox"
                   className="h-4 w-4 accent-black"
@@ -362,7 +416,47 @@ function AdminProductsView() {
                 Aktif
               </label>
 
-              <div className="flex justify-end gap-2 pt-2">
+              {/* Variasi Size & Stok */}
+              <div className="pt-2">
+                <p className="mb-2 text-sm font-medium text-gray-700">Ukuran & Stok</p>
+                <div className="space-y-2">
+                  {draft.variants.map((v, idx) => (
+                    <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                      <input
+                        value={v.size}
+                        onChange={(e) => updateVariant(idx, "size", e.target.value)}
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                        placeholder="38"
+                      />
+                      <input
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={v.quantity}
+                        onChange={(e) => updateVariant(idx, "quantity", e.target.value)}
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                        placeholder="0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeVariantRow(idx)}
+                        className="rounded-lg border border-gray-900 px-3 py-2 text-sm font-semibold hover:bg-gray-900 hover:text-white"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addVariantRow}
+                  className="mt-3 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+                >
+                  + Tambah ukuran & stok
+                </button>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
                 <button
                   type="button"
                   onClick={closeModal}

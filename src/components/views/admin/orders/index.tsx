@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, RotateCw } from "lucide-react";
+import { Search } from "lucide-react";
 
 /* ============== Types ============== */
 export type OrderStatus = "pending" | "diproses" | "dikirim" | "selesai" | "batal";
@@ -127,7 +127,7 @@ const AdminOrdersView = () => {
       setOrders(json.orders ?? []);
     } catch (e) {
       console.error(e);
-      setOrders([]); // fallback kosong
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -151,7 +151,6 @@ const AdminOrdersView = () => {
     });
   }, [orders, q, status]);
 
-  // pilih status → tampilkan modal
   function handleChangeStatus(orderId: number, value: OrderStatus) {
     const current = orders.find((o) => o.id === orderId)?.status;
     if (current === value) return;
@@ -180,7 +179,6 @@ const AdminOrdersView = () => {
       });
     } catch (e) {
       console.error(e);
-      // rollback jika gagal
       setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: original } : o)));
       alert("Gagal menyimpan status. Coba lagi.");
     }
@@ -189,43 +187,20 @@ const AdminOrdersView = () => {
   function closeModal() {
     setModalOpen(false);
     setModalId(null);
-    if (modalId != null) {
-      setPendingStatus((p) => ({ ...p, [modalId]: null }));
-    }
+    if (modalId != null) setPendingStatus((p) => ({ ...p, [modalId]: null }));
   }
-
-  function resetFilter() {
-    setQ("");
-    setStatus("all");
-    fetchOrders();
-  }
-
-  const modalOrder = modalId ? orders.find((o) => o.id === modalId) ?? null : null;
-  const modalNext = modalId ? pendingStatus[modalId] ?? null : null;
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <h1 className="text-xl font-bold text-gray-900">Manajemen Pesanan</h1>
-          <button
-            onClick={resetFilter}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-100"
-          >
-            <RotateCw className="h-4 w-4" /> Reset
-          </button>
-        </div>
-      </header>
-
       <div className="mx-auto max-w-6xl px-4 py-6">
-        {/* filter bar */}
+        {/* filter bar (tanpa judul & tanpa Reset) */}
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="relative w-full md:max-w-xl">
             <Search className="pointer-events-none absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Cari (ID, User, alamat, produk)…"
+              placeholder="Cari (ID, user, alamat, produk)…"
               className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
             />
           </div>
@@ -333,8 +308,8 @@ const AdminOrdersView = () => {
         open={modalOpen}
         onClose={closeModal}
         onConfirm={confirmSave}
-        order={modalOrder}
-        nextStatus={modalNext}
+        order={orders.find((o) => o.id === (modalId ?? -1)) ?? null}
+        nextStatus={modalId ? pendingStatus[modalId] ?? null : null}
       />
     </main>
   );
