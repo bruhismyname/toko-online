@@ -132,6 +132,7 @@ const DetailProductView = ({ id }: ProductViewProps) => {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <label className="text-sm font-semibold">Select Size</label>
+                <button className="text-sm underline">Size Guide</button>
               </div>
 
               <div className="grid grid-cols-5 gap-2">
