@@ -8,9 +8,19 @@ export default async function handler(
   if (req.method === "GET") {
     try {
       // Mengambil 3 produk dengan harga tertinggi sebagai produk unggulan
+      // Dengan relasi categories dan stocks (bukan stock)
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, category_id, image_url, stock")
+        .select(
+          `
+          id, 
+          name, 
+          price, 
+          image_url,
+          categories (id, name),
+          stocks (id, size, quantity)
+        `
+        )
         .eq("is_active", true)
         .order("price", { ascending: false })
         .limit(3);
