@@ -10,8 +10,16 @@ type Product = {
   id: number;
   name: string;
   price: number;
-  category_id: number;
   image_url: string;
+  categories?: {
+    id: number;
+    name: string;
+  };
+  stocks?: Array<{
+    id: number;
+    size: string;
+    quantity: number;
+  }>;
 };
 
 const CATEGORIES: Category[] = [
@@ -64,7 +72,7 @@ const ProductCard = ({ p }: { p: Product }) => (
       <Image src={p.image_url} alt={p.name} fill className="object-cover" />
     </div>
     <div className="px-4 pb-4 pt-3">
-      <p className="text-xs text-gray-500">{catName(p.category_id)}</p>
+      <p className="text-xs text-gray-500">{p.categories?.name || "-"}</p>
       <h3 className="mt-1 line-clamp-2 text-base font-semibold text-gray-900">
         {p.name}
       </h3>
