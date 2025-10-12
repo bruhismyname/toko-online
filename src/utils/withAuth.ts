@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 const SECRET = process.env.JWT_SECRET!;
 
 export function withAuth(handler: any, allowedRoles: string[] = []) {
+  console.log("jalan")
   return async (req: NextApiRequest, res: NextApiResponse) => {
     try {
       const token = req.cookies.token;

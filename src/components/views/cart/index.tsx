@@ -125,9 +125,28 @@ const CartView = () => {
         }
     }
 
-    const handleCheckout = (itemId: string, productName: string, total: number) => {
-        console.log('Checkout item:', itemId, productName, total)
-        // TODO: Implementasi checkout per item
+    const handleCheckout = async (cartItemId : string , userId : string) => {
+        console.log('Checkout:', cartId, userId)
+        try {
+            const res = await fetch(`/api/checkout`, {
+                method: "POST" , 
+                headers: {
+                    "Content-Type": "application/json",
+                } , 
+                body: JSON.stringify({ cart_item_id: cartItemId , user_id: userId }),
+                credentials: "include",
+            })
+            if (res.ok) {
+                console.log("jalan")
+                const json = await res.json()
+                console.log(json.data)
+                router.push('/checkout/' + json.data[0].id)
+            } else {
+                console.log(res)
+            }
+        } catch (error) {
+            console.error(error)
+        }
     }
 
     console.log(user)
@@ -220,7 +239,7 @@ const CartView = () => {
                                                     </div>
                                                     
                                                     <button
-                                                        onClick={() => handleCheckout(item.id, item.product.name, parseFloat(subtotal))}
+                                                        onClick={() => handleCheckout(item.id, user.id)}
                                                         className="w-full rounded-lg bg-black px-6 py-3 font-semibold text-white hover:bg-gray-800 transition"
                                                     >
                                                         Checkout

@@ -98,7 +98,7 @@ const DetailProductView = ({ id }: ProductViewProps) => {
     }
   };
 
-  console.log()
+  console.log(product);
   console.log(selectedStock);
 
   return (

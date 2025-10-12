@@ -66,7 +66,8 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
     const { data: existingItem, error: itemError } = await RetrieveDataByField("cart_items", {
       cart_id: cartId,
       product_id,
-      stock_id
+      stock_id,
+      status : "in_cart"
     });
     if (itemError) return res.status(500).json({ message: "Error checking cart items" });
 
@@ -95,7 +96,8 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
     const { data: existingItem, error: itemError } = await RetrieveDataByField("cart_items", {
       cart_id,
       product_id,
-      stock_id
+      stock_id,
+      status : "in_cart"
     });
     if (itemError) return res.status(500).json({ message: "Error checking cart items" });
     if (existingItem.length === 0) return res.status(404).json({ message: "Item not found in cart" });
@@ -146,7 +148,8 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
     const { data: existingItem, error: itemError } = await RetrieveDataByField("cart_items", {
       cart_id,
       product_id,
-      stock_id
+      stock_id, 
+      status : "in_cart"
     });
     if (itemError) return res.status(500).json({ message: "Error checking cart items" });
     if (existingItem.length === 0) return res.status(404).json({ message: "Item not found in cart" });
