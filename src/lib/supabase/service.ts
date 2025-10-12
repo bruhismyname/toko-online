@@ -1,4 +1,4 @@
-import supabase from "./init"
+import supabase from "./init";
 
 export async function addData(tableName: string, data: any) {
   const { data: result, error } = await supabase
@@ -6,7 +6,7 @@ export async function addData(tableName: string, data: any) {
     .insert([data])
     .select("*");
 
-  return { data: result ?? [], error }; 
+  return { data: result ?? [], error };
 }
 
 export async function updateData(tableName: string, id: string, data: any) {
@@ -16,18 +16,41 @@ export async function updateData(tableName: string, id: string, data: any) {
     .eq("id", id)
     .select("*");
 
-  return { data: result ?? [], error }; 
+  return { data: result ?? [], error };
 }
 
-export async function deleteData(tableName: string, id: string) {
-  const { data: result, error } = await supabase
-    .from(tableName)
-    .delete()
-    .eq("id", id)
-    .select("*");
+// export async function deleteData(tableName: string, id: string) {
+//   const { data: result, error } = await supabase
+//     .from(tableName)
+//     .delete()
+//     .eq("id", id)
+//     .select("*");
 
-  return { data: result ?? [], error }; 
-}
+//   return { data: result ?? [], error };
+// }
+
+export const deleteData = async (table: string, match: any) => {
+  try {
+    console.log(`Deleting from ${table} with match criteria:`, match);
+
+    const { data, error } = await supabase
+      .from(table)
+      .delete()
+      .match(match)
+      .select(); // Tambahkan select() untuk mendapatkan data yang dihapus
+
+    if (error) {
+      console.error(`Error deleting data from ${table}:`, error);
+      return { error };
+    }
+
+    console.log(`Successfully deleted data from ${table}:`, data);
+    return { data };
+  } catch (error) {
+    console.error(`Unexpected error in deleteData:`, error);
+    return { error };
+  }
+};
 
 export async function RetrieveData(tableName: string) {
   const { data: result, error } = await supabase.from(tableName).select("*");
@@ -35,7 +58,10 @@ export async function RetrieveData(tableName: string) {
 }
 
 export async function RetrieveDataById(tableName: string, id: string) {
-  const { data: result, error } = await supabase.from(tableName).select("*").eq("id", id);
+  const { data: result, error } = await supabase
+    .from(tableName)
+    .select("*")
+    .eq("id", id);
   return { data: result, error };
 }
 
@@ -55,10 +81,10 @@ export async function RetrieveDataByField(
 
 export async function RetrieveDataWithJoin(
   tableName: string,
-  relation: string, 
-  fields: string[] = ["*"], 
-  relationFields: string[] = ["*"], 
-  filters?: { [key: string]: string | number | boolean } 
+  relation: string,
+  fields: string[] = ["*"],
+  relationFields: string[] = ["*"],
+  filters?: { [key: string]: string | number | boolean }
 ) {
   let query = supabase
     .from(tableName)
