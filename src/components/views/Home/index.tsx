@@ -141,7 +141,7 @@ const HomeView = () => {
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                href="/products"
+                href="#featured-products"
                 className="rounded-lg bg-white px-4 py-2 font-semibold text-black hover:bg-gray-200"
               >
                 Belanja Sekarang
@@ -206,7 +206,7 @@ const HomeView = () => {
       </section>
 
       {/* FEATURED PRODUCTS - Menggunakan data dari API */}
-      <section className="mx-auto max-w-6xl px-4 pb-14">
+      <section id="featured-products" className="mx-auto max-w-6xl px-4 pb-14">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">PRODUK UNGGULAN</h2>
           <Link
