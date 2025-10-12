@@ -1,19 +1,48 @@
 import { useEffect, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 
 type ProductViewProps = {
   id: string;
 };
 
 const DetailProductView = ({ id }: ProductViewProps) => {
+  const router = useRouter();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [selectedStock, setSelectedStock] = useState<{
+    id: number;
+    size: string;
+  } | null>(null);
 
-  // 🔧 ubah selectedSize jadi object berisi stock id & size
-  const [selectedStock, setSelectedStock] = useState<{ id: number; size: string } | null>(null);
+  // Cek status login
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      try {
+        const res = await fetch("/api/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
 
+        if (res.ok) {
+          const data = await res.json();
+          setIsLoggedIn(!!data.user);
+        } else {
+          setIsLoggedIn(false);
+        }
+      } catch (error) {
+        console.error("Error checking login status:", error);
+        setIsLoggedIn(false);
+      }
+    };
+
+    checkLoginStatus();
+  }, []);
+
+  // Fetch data produk
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -37,6 +66,57 @@ const DetailProductView = ({ id }: ProductViewProps) => {
     fetchProduct();
   }, [id]);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStock) return;
+
+    // Jika pengguna belum login, simpan informasi produk dan redirect ke login
+    if (!isLoggedIn) {
+      // Simpan informasi produk ke localStorage
+      localStorage.setItem(
+        "pendingCartItem",
+        JSON.stringify({
+          product_id: product.id,
+          stock_id: selectedStock.id,
+          product_name: product.name,
+          size: selectedStock.size,
+          redirect_url: `/products/${id}`,
+        })
+      );
+
+      // Redirect ke halaman login
+      router.push("/auth/login");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: product.id,
+          stock_id: selectedStock.id,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        console.log(errData.message);
+        throw new Error("Failed to add to cart");
+      }
+
+      // Jika berhasil
+      alert(
+        `${product.name} ukuran ${selectedStock.size} berhasil ditambahkan ke keranjang!`
+      );
+      setSelectedStock(null);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      alert("Gagal menambahkan produk ke keranjang");
+    }
+  };
+
+  // Tampilan loading, error dan UI produk (tidak berubah)
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -64,42 +144,8 @@ const DetailProductView = ({ id }: ProductViewProps) => {
     );
   }
 
-  const availableSizes = product.stocks?.filter((stock: any) => stock.quantity > 0) || [];
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedStock) return;
-
-    console.log("Added to cart:", {
-      product_id: product.id,
-      stock_id: selectedStock.id,
-    });
-
-    alert(`Added size ${selectedStock.size} (stock_id: ${selectedStock.id}) to cart!`);
-    setSelectedStock(null);
-
-    try {
-      const res = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_id: product.id,
-          stock_id: selectedStock.id,
-        }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        console.log(errData.message);
-        throw new Error("Failed to add to cart");
-      }
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-    }
-  };
-
-  console.log(product);
-  console.log(selectedStock);
+  const availableSizes =
+    product.stocks?.filter((stock: any) => stock.quantity > 0) || [];
 
   return (
     <div className="min-h-screen bg-white">
@@ -133,14 +179,18 @@ const DetailProductView = ({ id }: ProductViewProps) => {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <label className="text-sm font-semibold">Select Size</label>
-                <Link href="/size-guide" className="text-sm underline">Size Guide</Link>
+                <Link href="/size-guide" className="text-sm underline">
+                  Size Guide
+                </Link>
               </div>
 
               <div className="grid grid-cols-5 gap-2">
                 {availableSizes.map((stock: any) => (
                   <button
                     key={stock.id}
-                    onClick={() => setSelectedStock({ id: stock.id, size: stock.size })}
+                    onClick={() =>
+                      setSelectedStock({ id: stock.id, size: stock.size })
+                    }
                     className={`py-3 px-4 border-2 rounded-lg font-medium transition-all ${
                       selectedStock?.id === stock.id
                         ? "border-black bg-black text-white"
@@ -155,7 +205,11 @@ const DetailProductView = ({ id }: ProductViewProps) => {
               {selectedStock && (
                 <p className="text-sm text-gray-600">
                   Stock available:{" "}
-                  {availableSizes.find((s: any) => s.id === selectedStock.id)?.quantity} pairs
+                  {
+                    availableSizes.find((s: any) => s.id === selectedStock.id)
+                      ?.quantity
+                  }{" "}
+                  pairs
                 </p>
               )}
             </div>
@@ -168,7 +222,9 @@ const DetailProductView = ({ id }: ProductViewProps) => {
                 onClick={handleSubmit}
               >
                 <ShoppingCart className="inline w-5 h-5 mr-2" />
-                Add to Bag
+                {isLoggedIn
+                  ? "Add to Bag"
+                  : "Login untuk Menambahkan ke Keranjang"}
               </button>
             </div>
 
@@ -182,7 +238,9 @@ const DetailProductView = ({ id }: ProductViewProps) => {
                 <span className="text-gray-600">Status</span>
                 <span
                   className={`font-medium ${
-                    availableSizes.length > 0 ? "text-green-600" : "text-red-600"
+                    availableSizes.length > 0
+                      ? "text-green-600"
+                      : "text-red-600"
                   }`}
                 >
                   {availableSizes.length > 0 ? "In Stock" : "Out of Stock"}

@@ -1,15 +1,19 @@
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { ArrowLeft, Store, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import Logo from "@/components/common/Logo"; // Import Logo
+import Logo from "@/components/common/Logo";
 
 const LoginView = () => {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
 
     const form = e.currentTarget;
     const data = {
@@ -30,10 +34,54 @@ const LoginView = () => {
         throw new Error("Login gagal, periksa email/password!");
       }
 
-      alert("Login berhasil!");
-      window.location.href = "/";
+      // Login berhasil - sekarang cek apakah ada item yang tertunda untuk ditambahkan ke keranjang
+      const pendingCartItemStr = localStorage.getItem("pendingCartItem");
+
+      if (pendingCartItemStr) {
+        try {
+          // Parse item dari localStorage
+          const pendingCartItem = JSON.parse(pendingCartItemStr);
+
+          // Hapus item dari localStorage
+          localStorage.removeItem("pendingCartItem");
+
+          // Tambahkan item ke keranjang
+          const cartRes = await fetch("/api/cart", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              product_id: pendingCartItem.product_id,
+              stock_id: pendingCartItem.stock_id,
+              quantity: 1,
+            }),
+          });
+
+          if (cartRes.ok) {
+            // Berhasil menambahkan ke keranjang
+            alert(
+              `${pendingCartItem.product_name || "Produk"} ukuran ${
+                pendingCartItem.size
+              } berhasil ditambahkan ke keranjang!`
+            );
+          }
+
+          // Redirect ke halaman produk yang sebelumnya dilihat
+          router.push(pendingCartItem.redirect_url);
+          return;
+        } catch (err) {
+          console.error("Error processing pending cart item:", err);
+          // Jika terjadi error, lanjut ke redirect default
+        }
+      }
+
+      // Jika tidak ada item tertunda atau terjadi error, redirect ke halaman utama
+      router.push("/");
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -50,7 +98,6 @@ const LoginView = () => {
           </Link>
           <div className="flex items-center">
             <Logo showText={false} />
-            {/* <span className="font-bold">Bakul Converse</span> */}
           </div>
         </div>
 
@@ -115,9 +162,10 @@ const LoginView = () => {
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-black px-4 py-2 font-semibold text-white transition hover:bg-gray-800"
+            disabled={loading}
+            className="w-full rounded-lg bg-black px-4 py-2 font-semibold text-white transition hover:bg-gray-800 disabled:bg-gray-400"
           >
-            Masuk
+            {loading ? "Memproses..." : "Masuk"}
           </button>
         </form>
 
