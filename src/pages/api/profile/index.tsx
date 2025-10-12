@@ -54,14 +54,19 @@ async function handler(
   // PUT: Update data profil
   if (req.method === "PUT") {
     try {
-      const { name, phone } = req.body;
+      const { name } = req.body;
+
+      // Log untuk debugging
+      console.log("Updating user profile:", { userId, name });
 
       if (!name) {
         return res.status(400).json({ message: "Nama harus diisi" });
       }
 
-      // Update data user
-      const result = await updateData("users", { name, phone }, { id: userId });
+      // Update hanya nama user
+      const result = await updateData("users", { name }, { id: userId });
+
+      console.log("Update result:", result);
 
       if (result.error) {
         console.error("Error updating user:", result.error);
@@ -72,7 +77,9 @@ async function handler(
       const userData = await RetrieveDataByField("users", { id: userId });
 
       if (userData.error || userData.data.length === 0) {
-        return res.status(500).json({ message: "Gagal mengambil data profil" });
+        return res
+          .status(500)
+          .json({ message: "Gagal mengambil data profil setelah update" });
       }
 
       // Hilangkan password dari response
@@ -85,7 +92,10 @@ async function handler(
       });
     } catch (error) {
       console.error("Server error:", error);
-      return res.status(500).json({ message: "Terjadi kesalahan" });
+      return res.status(500).json({
+        message: "Terjadi kesalahan server",
+        details: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

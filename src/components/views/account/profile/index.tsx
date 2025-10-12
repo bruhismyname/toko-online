@@ -7,7 +7,6 @@ type UserProfile = {
   id: string;
   name: string;
   email: string;
-  phone?: string;
 };
 
 type Address = {
@@ -27,10 +26,9 @@ const ProfileView = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
 
-  // Form state untuk edit profil
+  // Form state untuk edit profil - hanya nama saja
   const [formData, setFormData] = useState({
     name: "",
-    phone: "",
   });
 
   // Fetch data profil dari API
@@ -55,7 +53,6 @@ const ProfileView = () => {
         // Inisialisasi formData dengan data user
         setFormData({
           name: data.user.name,
-          phone: data.user.phone || "",
         });
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -74,6 +71,9 @@ const ProfileView = () => {
 
     try {
       setLoading(true);
+      // Logging untuk debug
+      console.log("Updating profile with:", formData);
+
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: {
@@ -82,12 +82,15 @@ const ProfileView = () => {
         body: JSON.stringify(formData),
       });
 
+      // Jangan parse response sebelum memeriksa status
       if (!res.ok) {
-        throw new Error("Gagal memperbarui profil");
+        const responseData = await res.json().catch(() => ({}));
+        console.error("API Error:", { status: res.status, data: responseData });
+        throw new Error(responseData.message || "Gagal memperbarui profil");
       }
 
-      const data = await res.json();
-      setUser(data.user);
+      const responseData = await res.json();
+      setUser(responseData.user);
       setIsEditing(false);
       alert("Profil berhasil diperbarui!");
     } catch (error) {
@@ -112,20 +115,39 @@ const ProfileView = () => {
     if (!confirm("Yakin ingin menghapus alamat ini?")) return;
 
     try {
-      const res = await fetch(`/api/address?id=${addressId}`, {
+      console.log("Menghapus alamat dengan ID:", addressId);
+
+      const res = await fetch(`/api/address/${addressId}`, {
         method: "DELETE",
       });
 
-      if (!res.ok) {
-        throw new Error("Gagal menghapus alamat");
-      }
+      // Tangani respons dengan lebih baik
+      let errorMessage = "Gagal menghapus alamat";
 
-      // Filter alamat yang dihapus
-      setAddresses(addresses.filter((addr) => addr.id !== addressId));
-      alert("Alamat berhasil dihapus!");
+      try {
+        const data = await res.json();
+        if (!res.ok) {
+          console.error("Delete address error:", { status: res.status, data });
+          errorMessage = data.message || errorMessage;
+          throw new Error(errorMessage);
+        }
+
+        // Filter alamat yang dihapus
+        setAddresses(addresses.filter((addr) => addr.id !== addressId));
+        alert("Alamat berhasil dihapus!");
+      } catch (parseError) {
+        if (!res.ok) {
+          throw new Error(errorMessage);
+        }
+        console.error("Error parsing response:", parseError);
+      }
     } catch (error) {
       console.error("Error deleting address:", error);
-      alert("Gagal menghapus alamat. Silakan coba lagi.");
+      alert(
+        `Gagal menghapus alamat: ${
+          error instanceof Error ? error.message : "Kesalahan tidak diketahui"
+        }`
+      );
     }
   };
 
@@ -192,7 +214,6 @@ const ProfileView = () => {
                   // Reset form
                   setFormData({
                     name: user?.name || "",
-                    phone: user?.phone || "",
                   });
                 }}
                 className="flex items-center text-sm text-gray-600 hover:text-converse-red"
@@ -211,10 +232,6 @@ const ProfileView = () => {
               <div>
                 <p className="text-sm text-gray-500">Email</p>
                 <p className="font-medium">{user?.email}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Nomor Telepon</p>
-                <p className="font-medium">{user?.phone || "-"}</p>
               </div>
             </div>
           ) : (
@@ -254,22 +271,6 @@ const ProfileView = () => {
                   Email tidak dapat diubah
                 </p>
               </div>
-              <div>
-                <label
-                  htmlFor="phone"
-                  className="block text-sm text-gray-500 mb-1"
-                >
-                  Nomor Telepon
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-converse-red"
-                />
-              </div>
               <div className="pt-2">
                 <button
                   type="submit"
@@ -300,7 +301,7 @@ const ProfileView = () => {
             </h2>
             <button
               onClick={() => setShowAddressModal(true)}
-              className="flex items-center text-sm bg-converse-red text-white px-3 py-1.5 rounded-md hover:bg-red-700"
+              className="flex items-center text-sm bg-gray-900 text-white px-3 py-1.5 rounded-md hover:bg-gray-800"
             >
               <Plus className="w-4 h-4 mr-1" /> Tambah Alamat
             </button>
@@ -312,7 +313,7 @@ const ProfileView = () => {
               <p>Belum ada alamat tersimpan</p>
               <button
                 onClick={() => setShowAddressModal(true)}
-                className="mt-2 text-sm text-converse-red hover:underline"
+                className="mt-2 text-sm bg-black text-white px-3 py-1.5 rounded-md hover:bg-gray-800"
               >
                 Tambah alamat baru
               </button>
