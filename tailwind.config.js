@@ -6,7 +6,12 @@ module.exports = {
     "./components/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        "converse-red": "#e53e3e", // Sesuaikan dengan warna brand Anda
+        "converse-black": "#000000",
+      },
+    },
   },
   plugins: [],
-}
+};
