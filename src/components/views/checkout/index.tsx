@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import AddressModal from "@/components/fragment/modal";
+import AddressModal from "@/components/fragment/modal/address-form-modal";
 import cart from "@/pages/api/cart";
 
 type CheckoutViewsProps = {

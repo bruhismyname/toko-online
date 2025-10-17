@@ -67,7 +67,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-sm">
+    <nav className="bg-white shadow-sm z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Logo dan Brand Name */}
@@ -76,7 +76,7 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="flex items-center space-x-8">
-              <Link href="/home" className="text-gray-900">
+              <Link href="/" className="text-gray-900">
                 Home
               </Link>
               <Link href="/products" className="text-gray-600 hover:text-black">
@@ -134,7 +134,7 @@ const Navbar = () => {
                         Profil Saya
                       </Link>
                       <Link
-                        href="/account/orders"
+                        href="/history"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         Pesanan Saya

@@ -7,11 +7,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: "Method not allowed" });
   }
 
+  const validatePassword = (password: string) => {
+    const regex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return regex.test(password);
+  };
+
+  const validateEmail = (email: string) => {
+    const regex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    return regex.test(email);
+  };
+
   try {
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Semua field wajib diisi" });
+    }
+
+    if (!validateEmail(email)) {
+      return res
+        .status(400)
+        .json({ message: "Email harus menggunakan Gmail yang valid." });
+    }
+
+    if (!validatePassword(password)) {
+      return res.status(400).json({
+        message:
+          "Password minimal 8 karakter dan harus mengandung huruf besar, huruf kecil, angka, dan simbol.",
+      });
     }
 
     const existing = await RetrieveDataByField("users", { email });
@@ -39,7 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(201).json({
       message: "Registrasi berhasil",
-      data: user.data[0], 
+      data: user.data[0],
     });
   } catch (error: any) {
     console.error("API Error:", error);

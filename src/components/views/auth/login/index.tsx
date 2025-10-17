@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Store, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import Logo from "@/components/common/Logo"; // Import Logo
+import { ArrowLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import Logo from "@/components/common/Logo";
 
 const LoginView = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false); // 🆕 state
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -15,6 +16,7 @@ const LoginView = () => {
     const data = {
       email: (form.elements.namedItem("email") as HTMLInputElement).value,
       password: (form.elements.namedItem("password") as HTMLInputElement).value,
+      rememberMe: rememberMe, // 🆕 kirim rememberMe
     };
 
     try {
@@ -27,7 +29,8 @@ const LoginView = () => {
       });
 
       if (!res.ok) {
-        throw new Error("Login gagal, periksa email/password!");
+        const errData = await res.json();
+        throw new Error(errData.message || "Login gagal");
       }
 
       alert("Login berhasil!");
@@ -40,17 +43,14 @@ const LoginView = () => {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
+        {/* Header */}
         <div className="mb-6 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center text-gray-500 hover:text-black"
-          >
+          <Link href="/" className="flex items-center text-gray-500 hover:text-black">
             <ArrowLeft className="mr-1 h-4 w-4" />
             Kembali
           </Link>
           <div className="flex items-center">
             <Logo showText={false} />
-            {/* <span className="font-bold">Bakul Converse</span> */}
           </div>
         </div>
 
@@ -58,8 +58,8 @@ const LoginView = () => {
           Selamat Datang <br /> di Bakul Converse!
         </h2>
 
+        {/* Form */}
         <form className="space-y-5" onSubmit={handleSubmit}>
-          {/* Email */}
           <div className="relative">
             <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
             <input
@@ -71,7 +71,6 @@ const LoginView = () => {
             />
           </div>
 
-          {/* Password */}
           <div className="relative">
             <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
             <input
@@ -86,27 +85,21 @@ const LoginView = () => {
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
             >
-              {showPassword ? (
-                <EyeOff className="h-5 w-5" />
-              ) : (
-                <Eye className="h-5 w-5" />
-              )}
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
 
-          {/* Actions */}
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center gap-2 text-gray-600">
               <input
                 type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300"
               />
               Ingat saya
             </label>
-            <Link
-              href="/auth/forgot"
-              className="text-gray-600 hover:text-black"
-            >
+            <Link href="/auth/forgot" className="text-gray-600 hover:text-black">
               Lupa password?
             </Link>
           </div>
@@ -123,10 +116,7 @@ const LoginView = () => {
 
         <p className="mt-6 text-center text-sm text-gray-500">
           Belum punya akun?{" "}
-          <Link
-            href="/auth/register"
-            className="font-medium text-black hover:underline"
-          >
+          <Link href="/auth/register" className="font-medium text-black hover:underline">
             Daftar sekarang
           </Link>
         </p>

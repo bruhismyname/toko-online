@@ -1,0 +1,11 @@
+import AdminLayout from "@/components/views/admin/layout";
+import AdminOrdersView from "@/components/views/admin/orders";
+
+function AdminOrdersPage() {
+  return (
+    <AdminLayout title="Manajemen Pesanan">
+      <AdminOrdersView />
+    </AdminLayout>
+  );
+}
+export default AdminOrdersPage;
