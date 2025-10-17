@@ -1,479 +1,384 @@
-import { useMemo, useState } from "react";
-import Image from "next/image";
+import { useEffect, useState } from "react";
+import AddCategoryModal from "@/components/fragment/modal/add-category-modal";
+import AddProductModal from "@/components/fragment/modal/add-product-modal";
+import AdminLayout from "@/components/views/admin/layout";
+import { useRouter } from "next/router";
 
-/** ------- Types + mock selaras DB (products + stocks) ------- */
-type Category = { id: number; name: string };
+const AdminProductView = () => {
+  const router = useRouter();
+    const [products, setProducts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<string>("all");
+    const [categoryFilter, setCategoryFilter] = useState<string>("all");
+    const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+    const [isAddProductOpen, setIsAddProductOpen] = useState(false);
 
-type Variant = {
-  size: string;      // contoh: "38", "39", "40"
-  quantity: number;  // stok per size
-};
+  
+  const categories = Array.from(
+    new Map(
+      products
+        .filter(p => p.category)
+        .map(p => [p.category.id, p.category])
+    ).values()
+  ).sort((a, b) => a.id - b.id);
 
-type Product = {
-  id: number;
-  name: string;
-  price: number;          // DECIMAL -> number
-  category_id: number;    // fk categories.id
-  is_active: boolean;
-  image_url: string;
-  variants: Variant[];    
-};
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const data = await getAllProducts();
+      setProducts(data);
+      setLoading(false);
+    };
+    fetchProducts();
+  }, []);
 
-const CATEGORIES: Category[] = [
-  { id: 1, name: "Classic Chuck" },
-  { id: 2, name: "Double Stack" },
-  { id: 3, name: "Run Star" },
-  { id: 4, name: "Basketball" },
-  { id: 5, name: "Slip-On & Sandal" },
-];
+  const getAllProducts = async () => {
+    try {
+      const res = await fetch("/api/admin/products");
 
-const SEED: Product[] = [
-  {
-    id: 1,
-    name: "Chuck Taylor All Star Hi Darkly Jaded",
-    price: 1099000,
-    category_id: 1,
-    is_active: true,
-    image_url: "",
-    variants: [
-      { size: "38", quantity: 10 },
-      { size: "39", quantity: 8 },
-      { size: "40", quantity: 6 },
-    ],
-  },
-  {
-    id: 2,
-    name: "CONS Louie Lopez Pro 2 Suede Low Black",
-    price: 1499000,
-    category_id: 3,
-    is_active: true,
-    image_url: "",
-    variants: [
-      { size: "41", quantity: 12 },
-      { size: "42", quantity: 10 },
-    ],
-  },
-  {
-    id: 3,
-    name: "All Star BB Prototype CX",
-    price: 2099000,
-    category_id: 4,
-    is_active: false,
-    image_url: "",
-    variants: [
-      { size: "40", quantity: 3 },
-      { size: "41", quantity: 2 },
-      { size: "42", quantity: 1 },
-    ],
-  },
-];
+      if (res.status === 401 || res.status === 403) {
+        router.push("/404"); 
+        return [];
+      }
 
-const currency = (n: number) =>
-  n.toLocaleString("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
-
-/** ------- Komponen kecil ------- */
-const Th = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 ${className}`}>{children}</th>
-);
-const Td = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <td className={`px-4 py-3 align-middle ${className}`}>{children}</td>
-);
-
-/** ======================== VIEW ======================== */
-function AdminProductsView() {
-  const [products, setProducts] = useState<Product[]>(SEED);
-  const [query, setQuery] = useState("");
-  const [categoryId, setCategoryId] = useState<number | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
-
-  const catMap = useMemo(
-    () => Object.fromEntries(CATEGORIES.map((c) => [c.id, c.name])) as Record<number, string>,
-    []
-  );
-
-  const filtered = useMemo(() => {
-    let data = [...products];
-    if (query.trim()) {
-      const s = query.toLowerCase();
-      data = data.filter((p) => p.name.toLowerCase().includes(s));
+      if (!res.ok) throw new Error("Failed to fetch products");
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      return [];
     }
-    if (categoryId !== "all") data = data.filter((p) => p.category_id === categoryId);
-    if (statusFilter !== "all") data = data.filter((p) => p.is_active === (statusFilter === "active"));
-    return data;
-  }, [products, query, categoryId, statusFilter]);
-
-  /** ---------- Modal Add/Edit ---------- */
-  type Draft = {
-    id: number;
-    name: string;
-    price: string; // string supaya bisa kosong dulu
-    category_id: number;
-    is_active: boolean;
-    image_url: string;
-    variants: { size: string; quantity: string }[]; // string agar mudah input
   };
 
-  const emptyDraft: Draft = {
-    id: 0,
-    name: "",
-    price: "",
-    category_id: CATEGORIES[0].id,
-    is_active: true,
-    image_url: "",
-    variants: [{ size: "38", quantity: "0" }],
+
+  const currency = (val: number) => 
+    new Intl.NumberFormat("id-ID", { 
+      style: "currency", 
+      currency: "IDR",
+      minimumFractionDigits: 0 
+    }).format(val);
+
+  const totalStock = (product: any) => {
+    return product.stocks?.reduce((sum: number, s: any) => sum + s.quantity, 0) || 0;
   };
 
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<Draft>(emptyDraft);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const handleEdit = (product: any) => {
+    console.log('Edit product:', product);
+    // TODO: Implement edit logic here
+  };
 
-  function openAdd() {
-    setEditingId(null);
-    setDraft(emptyDraft);
-    setOpen(true);
-  }
-  function openEdit(p: Product) {
-    setEditingId(p.id);
-    setDraft({
-      id: p.id,
-      name: p.name,
-      price: String(p.price),
-      category_id: p.category_id,
-      is_active: p.is_active,
-      image_url: p.image_url,
-      variants: p.variants.map((v) => ({ size: v.size, quantity: String(v.quantity) })),
-    });
-    setOpen(true);
-  }
-  function closeModal() {
-    setOpen(false);
-    setTimeout(() => {
-      setEditingId(null);
-      setDraft(emptyDraft);
-    }, 150);
-  }
+  const handleDelete = (productId: number) => {
+    console.log('Delete product:', productId);
+    // TODO: Implement delete logic here
+  };
 
-  function addVariantRow() {
-    setDraft((d) => ({ ...d, variants: [...d.variants, { size: "", quantity: "0" }] }));
+  const handleAddProduct = () => {
+    setIsAddProductOpen(true);
+  };
+
+    const handleAddCategory = () => {
+      setIsAddCategoryOpen(true);
+    };
+
+    
+
+
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "active" && product.is_active) || 
+      (statusFilter === "inactive" && !product.is_active);
+    const matchesCategory = categoryFilter === "all" || 
+      product.category?.id === Number(categoryFilter);
+    
+    return matchesSearch && matchesStatus && matchesCategory;
+  });
+
+  console.log(products);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-black border-r-transparent"></div>
+          <p className="mt-4 text-sm font-medium text-gray-600">Loading products...</p>
+        </div>
+      </div>
+    );
   }
-  function removeVariantRow(idx: number) {
-    setDraft((d) => ({ ...d, variants: d.variants.filter((_, i) => i !== idx) }));
-  }
-  function updateVariant(idx: number, field: "size" | "quantity", value: string) {
-    setDraft((d) => {
-      const arr = d.variants.slice();
-      arr[idx] = { ...arr[idx], [field]: field === "quantity" ? value.replace(/\D/g, "") : value };
-      return { ...d, variants: arr };
-    });
-  }
-
-  function saveDraft(e: React.FormEvent) {
-    e.preventDefault();
-    const priceNum = Number(draft.price.replace(/\D/g, ""));
-    if (!draft.name.trim()) return alert("Nama wajib diisi");
-    if (isNaN(priceNum)) return alert("Harga tidak valid");
-
-    // bersihkan variants: hapus baris kosong & ubah qty ke number
-    const cleanedVariants: Variant[] = draft.variants
-      .map((v) => ({ size: v.size.trim(), quantity: Number(v.quantity || "0") }))
-      .filter((v) => v.size !== "" && !Number.isNaN(v.quantity));
-
-    if (cleanedVariants.length === 0) {
-      return alert("Minimal satu variasi ukuran harus diisi.");
-    }
-
-    if (editingId) {
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === editingId
-            ? {
-                ...p,
-                name: draft.name,
-                price: priceNum,
-                category_id: draft.category_id,
-                is_active: draft.is_active,
-                image_url: draft.image_url,
-                variants: cleanedVariants,
-              }
-            : p
-        )
-      );
-    } else {
-      const nextId = Math.max(0, ...products.map((p) => p.id)) + 1;
-      setProducts((prev) => [
-        {
-          id: nextId,
-          name: draft.name,
-          price: priceNum,
-          category_id: draft.category_id,
-          is_active: draft.is_active,
-          image_url: draft.image_url,
-          variants: cleanedVariants,
-        },
-        ...prev,
-      ]);
-    }
-    closeModal();
-  }
-
-  function removeProduct(id: number) {
-    if (confirm("Hapus produk ini?")) {
-      setProducts((prev) => prev.filter((p) => p.id !== id));
-      if (editingId === id) closeModal();
-    }
-  }
-
-  const totalStock = (p: Product) => p.variants.reduce((sum, v) => sum + (v.quantity || 0), 0);
 
   return (
-    <div className="space-y-6">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari produk…"
-            className="w-64 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-          />
-          <select
-            value={categoryId as any}
-            onChange={(e) => setCategoryId(e.target.value === "all" ? "all" : Number(e.target.value))}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-          >
-            <option value="all">Semua Kategori</option>
-            {CATEGORIES.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-          >
-            <option value="all">Semua Status</option>
-            <option value="active">Aktif</option>
-            <option value="inactive">Nonaktif</option>
-          </select>
-        </div>
-        <button
-          onClick={openAdd}
-          className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-        >
-          + Tambah Produk
-        </button>
-      </div>
-
-      {/* Tabel */}
-      <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-lg">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="bg-white">
-              <Th>ID</Th>
-              <Th>Produk</Th>
-              <Th>Kategori</Th>
-              <Th>Harga</Th>
-              <Th>Stok</Th>
-              <Th>Status</Th>
-              <Th className="text-right">Aksi</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((p) => (
-              <tr key={p.id} className="border-t border-gray-200">
-                <Td>#{p.id}</Td>
-                <Td>
-                  <div className="flex items-center gap-3">
-                    {p.image_url ? (
-                      <div className="relative h-12 w-12 overflow-hidden rounded-md bg-gray-100">
-                        <Image src={p.image_url} alt={p.name} fill className="object-cover" />
-                      </div>
-                    ) : (
-                      <div className="grid h-12 w-12 place-items-center rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-400">
-                        IMG
-                      </div>
-                    )}
-                    <div>
-                      <div className="font-semibold text-gray-900">{p.name}</div>
-                      <div className="text-xs text-gray-500">{currency(p.price)}</div>
-                    </div>
-                  </div>
-                </Td>
-                <Td>{catMap[p.category_id]}</Td>
-                <Td>{currency(p.price)}</Td>
-                <Td>{totalStock(p)}</Td>
-                <Td>
-                  <span
-                    className={`rounded-full px-2 py-1 text-xs ${
-                      p.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {p.is_active ? "Aktif" : "Nonaktif"}
-                  </span>
-                </Td>
-                <Td className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => openEdit(p)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-gray-900 px-3 py-1.5 text-sm font-semibold hover:bg-gray-900 hover:text-white"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => removeProduct(p.id)}
-                      className="inline-flex items-center gap-2 rounded-lg bg-black px-3 py-1.5 text-sm font-semibold text-white hover:bg-gray-800"
-                    >
-                      Hapus
-                    </button>
-                  </div>
-                </Td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-5 py-10 text-center text-gray-500">
-                  Tidak ada produk.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ---------- Modal ---------- */}
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b px-5 py-3">
-              <h3 className="text-base font-bold text-gray-900">{editingId ? "Edit Produk" : "Tambah Produk"}</h3>
-              <button onClick={closeModal} className="rounded-md px-2 py-1 text-gray-500 hover:bg-gray-100">
-                ✕
+    <AdminLayout>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="mx-auto max-w-7xl">
+          {/* Header */}
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Product Management</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Total {products.length} products
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleAddCategory}
+                className="flex items-center gap-2 rounded-lg border-2 border-black bg-white px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-black hover:text-white"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                Add Category
+              </button>
+              <button
+                onClick={handleAddProduct}
+                className="flex items-center gap-2 rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Product
               </button>
             </div>
+          </div>
 
-            <form onSubmit={saveDraft} className="space-y-3 px-5 py-4">
-              <label className="block text-sm">
-                <span className="mb-1 block text-xs font-medium text-gray-700">Nama Produk</span>
-                <input
-                  value={draft.name}
-                  onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                  placeholder="Nama produk"
-                />
-              </label>
+          {/* Filters */}
+          <div className="mb-6 flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[250px]">
+              <svg 
+                className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products..."
+                className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
+            
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+            >
+              <option value="all">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
 
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block text-sm">
-                  <span className="mb-1 block text-xs font-medium text-gray-700">Harga</span>
-                  <div className="relative">
-                    <span className="pointer-events-none absolute left-3 top-2.5 text-sm text-gray-500">Rp</span>
-                    <input
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={draft.price}
-                      onChange={(e) => setDraft({ ...draft, price: e.target.value.replace(/\D/g, "") })}
-                      className="w-full rounded-lg border border-gray-300 pl-8 pr-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                      placeholder="0"
-                    />
-                  </div>
-                </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
 
-                <label className="block text-sm">
-                  <span className="mb-1 block text-xs font-medium text-gray-700">Kategori</span>
-                  <select
-                    value={draft.category_id}
-                    onChange={(e) => setDraft({ ...draft, category_id: Number(e.target.value) })}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                  >
-                    {CATEGORIES.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <label className="block text-sm">
-                <span className="mb-1 block text-xs font-medium text-gray-700">URL Gambar</span>
-                <input
-                  value={draft.image_url}
-                  onChange={(e) => setDraft({ ...draft, image_url: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                  placeholder="/images/filename.jpg atau URL https"
-                />
-              </label>
-
-              <label className="flex items-center gap-2 text-sm pt-1">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-black"
-                  checked={draft.is_active}
-                  onChange={(e) => setDraft({ ...draft, is_active: e.target.checked })}
-                />
-                Aktif
-              </label>
-
-              {/* Variasi Size & Stok */}
-              <div className="pt-2">
-                <p className="mb-2 text-sm font-medium text-gray-700">Ukuran & Stok</p>
-                <div className="space-y-2">
-                  {draft.variants.map((v, idx) => (
-                    <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2">
-                      <input
-                        value={v.size}
-                        onChange={(e) => updateVariant(idx, "size", e.target.value)}
-                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                        placeholder="38"
-                      />
-                      <input
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={v.quantity}
-                        onChange={(e) => updateVariant(idx, "quantity", e.target.value)}
-                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                        placeholder="0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeVariantRow(idx)}
-                        className="rounded-lg border border-gray-900 px-3 py-2 text-sm font-semibold hover:bg-gray-900 hover:text-white"
-                      >
-                        Hapus
-                      </button>
-                    </div>
+          {/* Table Container */}
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-black">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      ID
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Product
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Category
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Price
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Stock
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Sizes
+                    </th>
+                    <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-white">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {filteredProducts.map((product, idx) => (
+                    <tr 
+                      key={product.id}
+                      className="transition-colors hover:bg-gray-50"
+                    >
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                        #{product.id}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-100">
+                            {product.image_url ? (
+                              <img
+                                src={product.image_url}
+                                alt={product.name}
+                                className="h-full w-full object-cover object-center"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">
+                                NO IMAGE
+                              </div>
+                            )}
+                          </div>
+                          <div className="max-w-xs">
+                            <p className="text-sm font-semibold text-gray-900 line-clamp-2">
+                              {product.name}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                        {product.category?.name || '-'}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">
+                        {currency(product.price)}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-800">
+                          {totalStock(product)} units
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        {product.is_active ? (
+                          <span className="inline-flex items-center rounded-full bg-black px-3 py-1 text-xs font-semibold text-white">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-gray-300 px-3 py-1 text-xs font-semibold text-gray-700">
+                            Inactive
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1.5">
+                          {product.stocks?.map((stock: any) => (
+                            <div
+                              key={stock.id}
+                              className="inline-flex items-center gap-1.5 rounded border border-gray-300 bg-white px-2 py-1 text-xs"
+                            >
+                              <span className="font-semibold text-gray-900">
+                                {stock.size}
+                              </span>
+                              <span className="text-gray-500">:</span>
+                              <span className={stock.quantity > 5 ? "text-gray-700" : "text-red-600 font-medium"}>
+                                {stock.quantity}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleEdit(product)}
+                            className="rounded-lg border border-gray-300 p-2 text-gray-700 transition-colors hover:border-black hover:bg-black hover:text-white"
+                            title="Edit Product"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className="rounded-lg border border-red-300 p-2 text-red-600 transition-colors hover:border-red-600 hover:bg-red-600 hover:text-white"
+                            title="Delete Product"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
-                </div>
+                  {filteredProducts.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-12 text-center">
+                        <div className="text-gray-500">
+                          <p className="text-sm font-medium">No products found</p>
+                          <p className="mt-1 text-xs">
+                            {searchQuery || statusFilter !== "all" || categoryFilter !== "all" 
+                              ? "Try adjusting your filters" 
+                              : "Start by adding your first product"}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-                <button
-                  type="button"
-                  onClick={addVariantRow}
-                  className="mt-3 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-                >
-                  + Tambah ukuran & stok
-                </button>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="rounded-lg border border-gray-900 px-4 py-2 text-sm font-semibold hover:bg-gray-900 hover:text-white"
-                >
-                  Batal
-                </button>
-                <button className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">
-                  {editingId ? "Simpan Perubahan" : "Tambah"}
-                </button>
-              </div>
-            </form>
+          {/* Summary Cards */}
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
+                Total Products
+              </p>
+              <p className="mt-2 text-2xl font-bold text-gray-900">
+                {products.length}
+              </p>
+              {filteredProducts.length !== products.length && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Showing {filteredProducts.length}
+                </p>
+              )}
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
+                Active Products
+              </p>
+              <p className="mt-2 text-2xl font-bold text-gray-900">
+                {products.filter(p => p.is_active).length}
+              </p>
+              {filteredProducts.length !== products.length && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Filtered: {filteredProducts.filter(p => p.is_active).length}
+                </p>
+              )}
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
+                Total Stock
+              </p>
+              <p className="mt-2 text-2xl font-bold text-gray-900">
+                {products.reduce((sum, p) => sum + totalStock(p), 0)}
+              </p>
+              {filteredProducts.length !== products.length && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Filtered: {filteredProducts.reduce((sum, p) => sum + totalStock(p), 0)}
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      )}
-    </div>
+          <AddCategoryModal isOpen={isAddCategoryOpen} onClose={() => setIsAddCategoryOpen(false)} onCategoryAdded={() => {getAllProducts().then(setProducts)}} />
+          <AddProductModal isOpen={isAddProductOpen} onClose={() => setIsAddProductOpen(false)}  onProductAdded={() => {getAllProducts().then(setProducts)}} />
+      </div>
+    </AdminLayout>
   );
-}
+};
 
-export default AdminProductsView;
+export default AdminProductView;

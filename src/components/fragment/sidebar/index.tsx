@@ -41,12 +41,12 @@ export default function AdminSidebar() {
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
-      href: "/admin/products-backup",
+      href: "/admin/products",
       label: "Manajemen Produk",
       icon: <Package className="h-5 w-5" />,
     },
     {
-      href: "/admin/orders-backup",
+      href: "/admin/orders",
       label: "Manajemen Pesanan",
       icon: <ShoppingCart className="h-5 w-5" />,
     },

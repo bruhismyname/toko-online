@@ -130,4 +130,4 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
   }
 }
 
-export default withAuth(handler, ["user"]);
+export default withAuth(handler, ["admin"]);

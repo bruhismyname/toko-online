@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../layout";
+import { useRouter } from "next/router";
 
 function AdminDashboardView() {
+  const router = useRouter();
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -9,6 +11,13 @@ function AdminDashboardView() {
   const getProducts = async () => {
     try {
       const res = await fetch("/api/admin/products");
+
+      // 🚫 Kalau tidak punya akses → tampilkan halaman 404
+      if (res.status === 401 || res.status === 403) {
+        router.push("/404");
+        return [];
+      }
+
       if (!res.ok) throw new Error("Failed to fetch products");
       const data = await res.json();
       return Array.isArray(data) ? data : [];
@@ -24,10 +33,18 @@ function AdminDashboardView() {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
-      if (!res.ok) throw new Error("Failed to fetch orders");
-      const data = await res.json();
 
+      // 🚫 Kalau tidak punya akses → tampilkan halaman 404
+      if (res.status === 401 || res.status === 403) {
+        router.push("/404");
+        return [];
+      }
+
+      if (!res.ok) throw new Error("Failed to fetch orders");
+
+      const data = await res.json();
       const today = new Date().toISOString().split("T")[0];
+
       const ordersToday = Array.isArray(data)
         ? data.filter((order: { created_at?: string }) => {
             if (!order.created_at) return false;

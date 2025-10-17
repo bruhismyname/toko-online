@@ -1,318 +1,385 @@
-import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { useState, useEffect } from 'react';
+import OrderDetailModal from '@/components/fragment/modal/admin-order-detail';
+import AdminLayout from '../layout';
+import { useRouter } from 'next/router';
 
-/* ============== Types ============== */
-export type OrderStatus = "pending" | "diproses" | "dikirim" | "selesai" | "batal";
-
-type ProductLite = { id: number; name: string; price: number };
-type OrderItemRow = {
-  id: number;
-  price: number;
-  qty: number;
-  subtotal: number;
-  products?: ProductLite | null;
-};
-export type OrderRow = {
-  id: number;
-  user_id: number;
-  total: number;
-  status: OrderStatus;
-  address_text: string;
-  created_at: string;
-  users?: { id: number; name: string | null; email: string | null } | null;
-  order_items: OrderItemRow[];
-};
-
-/* ============== Helpers ============== */
-const currency = (n: number) =>
-  n.toLocaleString("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
-
-const fmtDate = (iso: string) =>
-  new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Jakarta" })
-    .format(new Date(iso));
-
-const fmtTime = (iso: string) =>
-  new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta" })
-    .format(new Date(iso));
-
-const STATUS_LABEL: Record<OrderStatus, string> = {
-  pending: "Pending",
-  diproses: "Diproses",
-  dikirim: "Dikirim",
-  selesai: "Selesai",
-  batal: "Batal",
-};
-
-const STATUS_STYLE: Record<OrderStatus, string> = {
-  pending:  "bg-yellow-50 border-yellow-200 text-yellow-900",
-  diproses: "bg-blue-50 border-blue-200 text-blue-900",
-  dikirim:  "bg-indigo-50 border-indigo-200 text-indigo-900",
-  selesai:  "bg-emerald-50 border-emerald-200 text-emerald-900",
-  batal:    "bg-rose-50 border-rose-200 text-rose-900",
-};
-
-/* ============== Modal konfirmasi ============== */
-function ConfirmModal({
-  open,
-  onClose,
-  onConfirm,
-  order,
-  nextStatus,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  order: OrderRow | null;
-  nextStatus: OrderStatus | null;
-}) {
-  if (!open || !order || !nextStatus) return null;
-  return (
-    <div className="fixed inset-0 z-[60] grid place-items-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-        <h3 className="text-lg font-bold text-gray-900">Konfirmasi Perubahan Status</h3>
-        <p className="mt-2 text-sm text-gray-600">
-          Pesanan <span className="font-semibold">#{order.id}</span> (user <span className="font-semibold">#{order.user_id}</span>) akan diubah menjadi{" "}
-          <span className="font-semibold">{STATUS_LABEL[nextStatus]}</span>.
-        </p>
-
-        <div className="mt-4 rounded-lg border border-gray-200 p-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Status sekarang</span>
-            <span className="font-semibold">{STATUS_LABEL[order.status]}</span>
-          </div>
-          <div className="mt-1 flex justify-between">
-            <span className="text-gray-600">Status baru</span>
-            <span className="font-semibold">{STATUS_LABEL[nextStatus]}</span>
-          </div>
-        </div>
-
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-lg border border-gray-900 px-4 py-2 text-sm font-semibold hover:bg-gray-900 hover:text-white"
-          >
-            Batal
-          </button>
-          <button
-            onClick={onConfirm}
-            className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-          >
-            Konfirmasi
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ============== VIEW ============== */
-const AdminOrdersView = () => {
-  const [orders, setOrders] = useState<OrderRow[]>([]);
+const OrdersAdminView = () => {
+  const router = useRouter();
+  const [orders, setOrders] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
-  // filters
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState<"all" | OrderStatus>("all");
-
-  // draft status + modal
-  const [pendingStatus, setPendingStatus] = useState<Record<number, OrderStatus | null>>({});
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalId, setModalId] = useState<number | null>(null);
-
-  async function fetchOrders() {
-    setLoading(true);
+  const getAllOrdersProducts = async () => {
     try {
-      const res = await fetch("/api/admin/orders");
-      const json = await res.json();
-      setOrders(json.orders ?? []);
-    } catch (e) {
-      console.error(e);
-      setOrders([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-  useEffect(() => { fetchOrders(); }, []);
-
-  const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    return orders.filter((o) => {
-      if (status !== "all" && o.status !== status) return false;
-      if (!s) return true;
-      const hay = [
-        String(o.id),
-        String(o.user_id),
-        o.users?.name ?? "",
-        o.users?.email ?? "",
-        o.address_text ?? "",
-        ...o.order_items.map((it) => it.products?.name ?? ""),
-      ].join(" ").toLowerCase();
-      return hay.includes(s);
-    });
-  }, [orders, q, status]);
-
-  function handleChangeStatus(orderId: number, value: OrderStatus) {
-    const current = orders.find((o) => o.id === orderId)?.status;
-    if (current === value) return;
-    setPendingStatus((prev) => ({ ...prev, [orderId]: value }));
-    setModalId(orderId);
-    setModalOpen(true);
-  }
-
-  async function confirmSave() {
-    if (modalId == null) return;
-    const id = modalId;
-    const next = pendingStatus[id];
-    const original = orders.find((o) => o.id === id)?.status as OrderStatus;
-
-    // optimistik
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: next as OrderStatus } : o)));
-    setPendingStatus((p) => ({ ...p, [id]: null }));
-    setModalOpen(false);
-    setModalId(null);
-
-    try {
-      await fetch(`/api/admin/orders/${id}`, {
-        method: "PATCH",
+      const response = await fetch("/api/admin/orders", {
+        method: "GET",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: next }),
       });
-    } catch (e) {
-      console.error(e);
-      setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: original } : o)));
-      alert("Gagal menyimpan status. Coba lagi.");
-    }
-  }
 
-  function closeModal() {
-    setModalOpen(false);
-    setModalId(null);
-    if (modalId != null) setPendingStatus((p) => ({ ...p, [modalId]: null }));
-  }
+      if (response.status === 401 || response.status === 403) {
+        router.push("/404"); 
+        return [];
+      }
+
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      setLoading(true);
+      const data = await getAllOrdersProducts();
+      setOrders(data);
+      setLoading(false);
+    };
+    fetchOrders();
+  }, []);
+
+  const currency = (value : any) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const formatDate = (dateString : any) => {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+ 
+  const getStatusBadge = (status : keyof typeof statusStyles) => {
+    const statusStyles = {
+      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      processing: 'bg-blue-100 text-blue-800 border-blue-200',
+      shipped: 'bg-purple-100 text-purple-800 border-purple-200',
+      delivered: 'bg-green-100 text-green-800 border-green-200',
+      cancelled: 'bg-red-100 text-red-800 border-red-200',
+    };
+
+
+
+    return (
+      <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${statusStyles[status] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
+
+  console.log(orders)
+  console.log(orders.length)
+
+  const filteredOrders = orders.filter((order : any) => {
+    const matchesSearch = 
+      order.cart_item?.product?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.order?.user?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.order?.user?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.id.toString().includes(searchQuery);
+    
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  const openModal = (id: number) => {
+    setSelectedOrderId(id);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setSelectedOrderId(null);
+    setIsModalOpen(false);
+  };
+
+  const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+  const pendingOrders = orders.filter(o => o.status === 'pending').length;
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        {/* filter bar (tanpa judul & tanpa Reset) */}
-        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="relative w-full md:max-w-xl">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Cari (ID, user, alamat, produk)…"
-              className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-            />
+    <AdminLayout>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Orders Management</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Total {orders.length} orders
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="flex items-center gap-2 rounded-lg border-2 border-black bg-white px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-black hover:text-white"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
+            </div>
           </div>
 
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as any)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black md:w-56"
-          >
-            <option value="all">Semua Status</option>
-            <option value="pending">Pending</option>
-            <option value="diproses">Diproses</option>
-            <option value="dikirim">Dikirim</option>
-            <option value="selesai">Selesai</option>
-            <option value="batal">Batal</option>
-          </select>
-        </div>
+          <div className="mb-6 flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[250px]">
+              <svg 
+                className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search orders, customers, products..."
+                className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
+            
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="shipped">Shipped</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
 
-        {/* table */}
-        <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-lg">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="bg-white">
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">ID</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">User</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Alamat</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Item</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-600">Total</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Tanggal</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-gray-500">Memuat…</td>
-                </tr>
-              )}
-
-              {!loading && filtered.map((o) => (
-                <tr key={o.id} className="border-t border-gray-200 align-top">
-                  <td className="px-4 py-3">#{o.id}</td>
-
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">#{o.user_id}</div>
-                    <div className="text-xs text-gray-600">{o.users?.name ?? "-"}</div>
-                  </td>
-
-                  <td className="px-4 py-3 max-w-[360px]">
-                    <p className="truncate text-gray-900" title={o.address_text}>{o.address_text}</p>
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <div className="space-y-1 text-xs text-gray-700">
-                      {o.order_items.map((it) => (
-                        <div key={it.id} className="flex justify-between gap-3">
-                          <span className="truncate">
-                            {it.products?.name ?? `#${it.products?.id ?? "-"}`} × {it.qty}
-                          </span>
-                          <span>{currency(it.subtotal)}</span>
+          {/* Table Container */}
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-black">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Order ID
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Customer
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Product
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Quantity
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Total
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Address
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-white">
+                      Date
+                    </th>
+                    <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-white">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-12 text-center">
+                        <div className="text-gray-500">
+                          <p className="text-sm font-medium">Loading orders...</p>
                         </div>
-                      ))}
-                    </div>
-                  </td>
+                      </td>
+                    </tr>
+                  ) : filteredOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-12 text-center">
+                        <div className="text-gray-500">
+                          <p className="text-sm font-medium">No orders found</p>
+                          <p className="mt-1 text-xs">
+                            {searchQuery || statusFilter !== "all" 
+                              ? "Try adjusting your filters" 
+                              : "No orders have been placed yet"}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredOrders.map((order : any) => (
+                      <tr 
+                        key={order.id}
+                        className="transition-colors hover:bg-gray-50"
+                      >
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                          #{order.id}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {order.order?.user?.name || 'Unknown'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {order.order?.user?.email || '-'}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-100">
+                              {order.cart_item?.product?.image_url ? (
+                                <img
+                                  src={order.cart_item.product.image_url}
+                                  alt={order.cart_item.product.name}
+                                  className="h-full w-full object-cover object-center"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">
+                                  NO IMAGE
+                                </div>
+                              )}
+                            </div>
+                            <div className="max-w-xs">
+                              <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                                {order.cart_item?.product?.name || 'Unknown Product'}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                          <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-800">
+                            {order.cart_item?.qty || 0}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">
+                          {currency(order.total || 0)}
+                        </td>
+                        {/* 🆕 Kolom Address */}
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {order.address ? (
+                            <div className="max-w-[250px]">
+                              <p className="font-medium">{order.address.city}</p>
+                              <p className="text-xs text-gray-500">
+                                {order.address.street}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {order.address.province} ({order.address.postal_code})
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-xs italic text-gray-400">No address</span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          {getStatusBadge(order.status) ?? 'pending'}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                          {formatDate(order.created_at)}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => openModal(order.id)}
+                              className="rounded-lg border border-gray-300 p-2 text-gray-700 transition-colors hover:border-black hover:bg-black hover:text-white"
+                              title="View Details"
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => alert(`Update status for order #${order.id}`)}
+                              className="rounded-lg border border-gray-300 p-2 text-gray-700 transition-colors hover:border-black hover:bg-black hover:text-white"
+                              title="Update Status"
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-                  <td className="px-4 py-3 text-right font-semibold">{currency(o.total)}</td>
-
-                  <td className="px-4 py-3">
-                    <select
-                      value={o.status}
-                      onChange={(e) => handleChangeStatus(o.id, e.target.value as OrderStatus)}
-                      className={`rounded-lg border px-3 py-1.5 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${STATUS_STYLE[o.status]}`}
-                      title="Ubah status"
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="diproses">Diproses</option>
-                      <option value="dikirim">Dikirim</option>
-                      <option value="selesai">Selesai</option>
-                      <option value="batal">Batal</option>
-                    </select>
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <div className="leading-tight">
-                      <div className="text-gray-900">{fmtDate(o.created_at)}</div>
-                      <div className="text-xs text-gray-600">{fmtTime(o.created_at)}</div>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-
-              {!loading && filtered.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-gray-500">Tidak ada pesanan.</td>
-                </tr>
+          {/* Summary Cards */}
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
+                Total Orders
+              </p>
+              <p className="mt-2 text-2xl font-bold text-gray-900">
+                {orders.length}
+              </p>
+              {filteredOrders.length !== orders.length && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Showing {filteredOrders.length}
+                </p>
               )}
-            </tbody>
-          </table>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
+                Pending Orders
+              </p>
+              <p className="mt-2 text-2xl font-bold text-gray-900">
+                {pendingOrders}
+              </p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
+                Total Revenue
+              </p>
+              <p className="mt-2 text-2xl font-bold text-gray-900">
+                {currency(totalRevenue)}
+              </p>
+              {filteredOrders.length !== orders.length && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Filtered: {currency(filteredOrders.reduce((sum, o) => sum + (o.total || 0), 0))}
+                </p>
+              )}
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
+                Avg Order Value
+              </p>
+              <p className="mt-2 text-2xl font-bold text-gray-900">
+                {orders.length > 0 ? currency(totalRevenue / orders.length) : currency(0)}
+              </p>
+            </div>
+          </div>
         </div>
+        <OrderDetailModal
+          orderId={selectedOrderId}
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          onUpdateSuccess={async () => {
+            const data = await getAllOrdersProducts();
+            setOrders(data);
+          }}
+        />
       </div>
-
-      {/* popup konfirmasi */}
-      <ConfirmModal
-        open={modalOpen}
-        onClose={closeModal}
-        onConfirm={confirmSave}
-        order={orders.find((o) => o.id === (modalId ?? -1)) ?? null}
-        nextStatus={modalId ? pendingStatus[modalId] ?? null : null}
-      />
-    </main>
+    </AdminLayout>
   );
 };
 
-export default AdminOrdersView;
+export default OrdersAdminView;

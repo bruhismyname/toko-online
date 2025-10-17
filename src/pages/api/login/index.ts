@@ -32,6 +32,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ message: "Password salah" });
   }
 
+  console.log(user)
+
   const token = jwt.sign(
     { id: user.id, role: user.role },
     process.env.JWT_SECRET!,
