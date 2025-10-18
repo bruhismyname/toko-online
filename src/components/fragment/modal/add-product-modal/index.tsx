@@ -22,7 +22,6 @@ export default function AddProductModal({
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // ✅ Ambil kategori dari API
   const getAllCategories = async () => {
     try {
       const res = await fetch("/api/categories");
@@ -43,7 +42,6 @@ export default function AddProductModal({
     fetchCategories();
   }, []);
 
-  // ✅ Upload gambar (preview)
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -52,17 +50,14 @@ export default function AddProductModal({
     }
   };
 
-  // ✅ Tambah baris stok
   const handleAddStock = () => {
     setStocks([...stocks, { size: "", quantity: "" }]);
   };
 
-  // ✅ Hapus baris stok
   const handleRemoveStock = (index: number) => {
     setStocks(stocks.filter((_, i) => i !== index));
   };
 
-  // ✅ Update nilai size / quantity
   const handleUpdateStock = (
     index: number,
     field: "size" | "quantity",
@@ -73,7 +68,6 @@ export default function AddProductModal({
     setStocks(newStocks);
   };
 
-  // ✅ Submit product + stock + image
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {

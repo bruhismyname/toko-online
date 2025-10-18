@@ -1,8 +1,19 @@
+"use client";
 import Router from "next/router";
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, User, Mail, Lock, Eye, EyeOff, Check, X } from "lucide-react";
+import {
+  ArrowLeft,
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Check,
+  X,
+} from "lucide-react";
 import Logo from "@/components/common/Logo";
+import { useNotification } from "@/components/context/NotificationContext";
 
 const RegisterView = () => {
   const [form, setForm] = useState({
@@ -15,11 +26,12 @@ const RegisterView = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState({
     email: false,
     password: false,
   });
+
+  const { showNotification } = useNotification(); // ✅ ambil dari global
 
   // Password validation checks
   const passwordChecks = {
@@ -51,7 +63,7 @@ const RegisterView = () => {
     });
   };
 
-  const handleBlur = (field: 'email' | 'password') => {
+  const handleBlur = (field: "email" | "password") => {
     setTouched({
       ...touched,
       [field]: true,
@@ -60,25 +72,28 @@ const RegisterView = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
 
     if (!validateEmail(form.email)) {
-      setError("Email harus menggunakan format Gmail yang valid (contoh: nama@gmail.com).");
+      showNotification(
+        "Email harus menggunakan format Gmail yang valid (contoh: nama@gmail.com).",
+        "error"
+      );
       setLoading(false);
       return;
     }
 
     if (!validatePassword(form.password)) {
-      setError(
-        "Password minimal 8 karakter dan harus mengandung huruf besar, huruf kecil, angka, dan simbol."
+      showNotification(
+        "Password minimal 8 karakter dan harus mengandung huruf besar, huruf kecil, angka, dan simbol.",
+        "error"
       );
       setLoading(false);
       return;
     }
 
     if (form.password !== form.confirmPassword) {
-      setError("Password dan Konfirmasi Password tidak sama!");
+      showNotification("Password dan Konfirmasi Password tidak sama!", "error");
       setLoading(false);
       return;
     }
@@ -100,23 +115,37 @@ const RegisterView = () => {
         throw new Error(json.message || "Registrasi gagal");
       }
 
-      alert("Registrasi berhasil!");
-      Router.push("/auth/login");
+      showNotification(
+        "Registrasi berhasil! Mengarahkan ke halaman login...",
+        "success"
+      );
+
+      setTimeout(() => {
+        Router.push("/auth/login");
+      }, 1500);
     } catch (err: any) {
-      setError(err.message);
+      showNotification(err.message, "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const ValidationItem = ({ isValid, text }: { isValid: boolean; text: string }) => (
+  const ValidationItem = ({
+    isValid,
+    text,
+  }: {
+    isValid: boolean;
+    text: string;
+  }) => (
     <div className="flex items-center gap-2">
       {isValid ? (
         <Check className="h-4 w-4 text-green-500" />
       ) : (
         <X className="h-4 w-4 text-red-500" />
       )}
-      <span className={`text-xs ${isValid ? 'text-green-600' : 'text-gray-600'}`}>
+      <span
+        className={`text-xs ${isValid ? "text-green-600" : "text-gray-600"}`}
+      >
         {text}
       </span>
     </div>
@@ -159,7 +188,7 @@ const RegisterView = () => {
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                onBlur={() => handleBlur('email')}
+                onBlur={() => handleBlur("email")}
                 required
                 placeholder="Email (harus Gmail)"
                 className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
@@ -167,9 +196,9 @@ const RegisterView = () => {
             </div>
             {touched.email && form.email && (
               <div className="mt-2 rounded-lg bg-gray-50 p-3">
-                <ValidationItem 
-                  isValid={isGmailValid} 
-                  text="Harus menggunakan domain @gmail.com" 
+                <ValidationItem
+                  isValid={isGmailValid}
+                  text="Harus menggunakan domain @gmail.com"
                 />
               </div>
             )}
@@ -183,7 +212,7 @@ const RegisterView = () => {
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                onBlur={() => handleBlur('password')}
+                onBlur={() => handleBlur("password")}
                 required
                 placeholder="Password"
                 className="w-full rounded-lg border border-gray-300 pl-10 pr-10 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
@@ -193,30 +222,34 @@ const RegisterView = () => {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
               >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
               </button>
             </div>
             {touched.password && form.password && (
               <div className="mt-2 space-y-1 rounded-lg bg-gray-50 p-3">
-                <ValidationItem 
-                  isValid={passwordChecks.minLength} 
-                  text="Minimal 8 karakter" 
+                <ValidationItem
+                  isValid={passwordChecks.minLength}
+                  text="Minimal 8 karakter"
                 />
-                <ValidationItem 
-                  isValid={passwordChecks.hasUpperCase} 
-                  text="Mengandung huruf besar (A-Z)" 
+                <ValidationItem
+                  isValid={passwordChecks.hasUpperCase}
+                  text="Mengandung huruf besar (A-Z)"
                 />
-                <ValidationItem 
-                  isValid={passwordChecks.hasLowerCase} 
-                  text="Mengandung huruf kecil (a-z)" 
+                <ValidationItem
+                  isValid={passwordChecks.hasLowerCase}
+                  text="Mengandung huruf kecil (a-z)"
                 />
-                <ValidationItem 
-                  isValid={passwordChecks.hasNumber} 
-                  text="Mengandung angka (0-9)" 
+                <ValidationItem
+                  isValid={passwordChecks.hasNumber}
+                  text="Mengandung angka (0-9)"
                 />
-                <ValidationItem 
-                  isValid={passwordChecks.hasSymbol} 
-                  text="Mengandung simbol (@$!%*?&)" 
+                <ValidationItem
+                  isValid={passwordChecks.hasSymbol}
+                  text="Mengandung simbol (@$!%*?&)"
                 />
               </div>
             )}
@@ -238,15 +271,21 @@ const RegisterView = () => {
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
             >
-              {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              {showConfirmPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
             </button>
           </div>
 
-          {form.password && form.confirmPassword && form.password !== form.confirmPassword && (
-            <p className="text-xs text-red-500">Password dan Konfirmasi Password tidak sama</p>
-          )}
-
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {form.password &&
+            form.confirmPassword &&
+            form.password !== form.confirmPassword && (
+              <p className="text-xs text-red-500">
+                Password dan Konfirmasi Password tidak sama
+              </p>
+            )}
 
           <button
             type="submit"

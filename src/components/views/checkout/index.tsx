@@ -1,8 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import AddressModal from "@/components/fragment/modal/address-form-modal";
-import cart from "@/pages/api/cart";
-
+import { useNotification } from "@/components/context/NotificationContext";
 type CheckoutViewsProps = {
   id: string;
 };
@@ -15,6 +14,7 @@ const CheckoutViews = ({ id }: CheckoutViewsProps) => {
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
+  const { showNotification } = useNotification();
 
   useEffect(() => {
     const init = async () => {
@@ -25,6 +25,7 @@ const CheckoutViews = ({ id }: CheckoutViewsProps) => {
         });
 
         if (!res.ok) {
+          showNotification("Silakan login terlebih dahulu.", "error");
           router.push("/auth/login");
           return;
         }
@@ -37,20 +38,13 @@ const CheckoutViews = ({ id }: CheckoutViewsProps) => {
 
         setUser(json.user);
 
-        // Ensure the userId is a string
         const userId = String(json.user.id);
-        console.log("User ID from session:", userId);
+        const addressList = await getAddressByUserId(userId);
+        setAddresses(addressList);
 
-        try {
-          const addressList = await getAddressByUserId(userId);
-          setAddresses(addressList);
-
-          if (addressList.length === 0) {
-            setShowModal(true);
-          }
-        } catch (addressError) {
-          console.error("Failed to fetch addresses:", addressError);
-          // Continue without addresses
+        if (addressList.length === 0) {
+          showNotification("Tambahkan alamat pengiriman terlebih dahulu.", "info");
+          setShowModal(true);
         }
 
         if (id) {
@@ -58,67 +52,57 @@ const CheckoutViews = ({ id }: CheckoutViewsProps) => {
           await getOrderItem(id);
         }
       } catch (error) {
-        console.error("Initialization error:", error);
+        showNotification("Terjadi kesalahan saat memuat halaman checkout.", "error");
         router.push("/auth/login");
       }
     };
 
     init();
-  }, [id, router]);
+  }, [id, router, showNotification]);
 
   const getOrderItem = async (checkoutId: string) => {
     try {
       const res = await fetch(`/api/checkout?id=${checkoutId}`);
       if (!res.ok) {
         const errData = await res.json();
-        console.log(errData.message);
-        throw new Error("Failed to fetch order item");
+        showNotification(errData.message || "Gagal mengambil data pesanan.", "error");
+        return;
       }
 
       const data = await res.json();
-      console.log("Order ID:", data.data.id);
       setOrderItem(data.data);
-    } catch (error) {
-      console.error("Error fetching order item:", error);
+    } catch {
+      showNotification("Gagal memuat item pesanan.", "error");
     }
   };
 
   const getAddressByUserId = async (userId: string) => {
     try {
-      console.log("Fetching addresses for user:", userId);
-
       const res = await fetch(`/api/address?user_id=${userId}`);
-
       if (!res.ok) {
-        let errorMessage = "Failed to fetch address";
-        try {
-          const errorData = await res.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          // Jika tidak bisa parse JSON
-        }
-        console.error("Error response:", { status: res.status, errorMessage });
-
-        // Return empty array instead of throwing error to prevent UI crashes
+        const errorData = await res.json().catch(() => ({}));
+        showNotification(errorData.message || "Gagal mengambil alamat.", "error");
         return [];
       }
 
       const data = await res.json();
-      console.log("Addresses fetched:", data);
-
       return data.data || [];
-    } catch (error) {
-      console.error("Error fetching address:", error);
+    } catch {
+      showNotification("Terjadi kesalahan saat memuat alamat.", "error");
       return [];
     }
   };
 
   const handleSelectAddress = (id: string) => {
     setSelectedAddress(id);
+    showNotification("Alamat dipilih.", "info");
   };
 
   const handleOrder = async () => {
-    if (!orderItem || !selectedAddress) return;
+    if (!orderItem || !selectedAddress) {
+      showNotification("Pilih alamat sebelum melanjutkan!", "error");
+      return;
+    }
 
     try {
       const res = await fetch(`/api/checkout`, {
@@ -134,23 +118,18 @@ const CheckoutViews = ({ id }: CheckoutViewsProps) => {
       });
 
       if (!res.ok) {
-        const errData = await res.json();
-        console.error(errData.message || "Failed to update order");
-        throw new Error("Failed to update order");
+        const errData = await res.json().catch(() => ({}));
+        showNotification(errData.message || "Gagal membuat pesanan.", "error");
+        return;
       }
 
       const result = await res.json();
-      console.log("✅ Order updated:", result);
-
-      alert("Pesanan berhasil dibuat!");
-      // misalnya arahkan ke halaman sukses
+      showNotification("Pesanan berhasil dibuat!", "success");
       router.push(`/products`);
-    } catch (error) {
-      console.error("❌ Error saat membuat pesanan:", error);
+    } catch {
+      showNotification("Terjadi kesalahan saat membuat pesanan.", "error");
     }
   };
-
-  console.log(orderItem);
 
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
@@ -241,7 +220,7 @@ const CheckoutViews = ({ id }: CheckoutViewsProps) => {
       <div className="mt-4">
         <button
           disabled={!selectedAddress}
-          onClick={() => handleOrder()}
+          onClick={handleOrder}
           className={`w-full py-3 rounded text-white text-lg ${
             selectedAddress
               ? "bg-blue-600 hover:bg-blue-700"
@@ -255,29 +234,20 @@ const CheckoutViews = ({ id }: CheckoutViewsProps) => {
       {/* Modal Tambah Alamat */}
       {showModal && user && (
         <AddressModal
-          userId={String(user.id)} // Ensure userId is a string
+          userId={String(user.id)}
           onClose={() => setShowModal(false)}
           onSuccess={() => {
-            try {
-              // Use timeout to ensure API server has processed the data
-              setTimeout(async () => {
-                try {
-                  if (user) {
-                    const userId = String(user.id);
-                    const updatedAddresses = await getAddressByUserId(userId);
-                    setAddresses(updatedAddresses);
-                  }
-                } catch (error) {
-                  console.error("Failed to refresh addresses:", error);
-                  // Just show an alert, don't crash the UI
-                  alert(
-                    "Alamat berhasil ditambahkan, tetapi gagal me-refresh daftar alamat. Silakan reload halaman."
-                  );
+            setTimeout(async () => {
+              try {
+                if (user) {
+                  const updatedAddresses = await getAddressByUserId(String(user.id));
+                  setAddresses(updatedAddresses);
+                  showNotification("Alamat baru berhasil ditambahkan!", "success");
                 }
-              }, 500);
-            } catch (error) {
-              console.error("Error in onSuccess:", error);
-            }
+              } catch {
+                showNotification("Gagal memperbarui daftar alamat.", "error");
+              }
+            }, 500);
           }}
         />
       )}

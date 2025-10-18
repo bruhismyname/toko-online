@@ -1,15 +1,18 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { ArrowLeft, Store, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import Logo from "@/components/common/Logo";
+import { useNotification } from "@/components/context/NotificationContext";
 
 const LoginView = () => {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false); // 🆕 state
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const { showNotification } = useNotification();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -20,40 +23,40 @@ const LoginView = () => {
     const data = {
       email: (form.elements.namedItem("email") as HTMLInputElement).value,
       password: (form.elements.namedItem("password") as HTMLInputElement).value,
-      rememberMe: rememberMe, // 🆕 kirim rememberMe
+      rememberMe,
     };
 
     try {
       const res = await fetch("/api/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
+      const result = await res.json();
+
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.message || "Login gagal");
+        throw new Error(result.message || "Login gagal");
       }
 
-      // Login berhasil - sekarang cek apakah ada item yang tertunda untuk ditambahkan ke keranjang
-      const pendingCartItemStr = localStorage.getItem("pendingCartItem");
+      showNotification("Login berhasil!", "success");
 
+      // Jika user admin → redirect ke dashboard admin
+      if (result.role === "admin") {
+        router.push("/admin/dashboard");
+        return;
+      }
+
+      // Jika ada pending cart item di localStorage
+      const pendingCartItemStr = localStorage.getItem("pendingCartItem");
       if (pendingCartItemStr) {
         try {
-          // Parse item dari localStorage
           const pendingCartItem = JSON.parse(pendingCartItemStr);
-
-          // Hapus item dari localStorage
           localStorage.removeItem("pendingCartItem");
 
-          // Tambahkan item ke keranjang
           const cartRes = await fetch("/api/cart", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               product_id: pendingCartItem.product_id,
               stock_id: pendingCartItem.stock_id,
@@ -62,27 +65,24 @@ const LoginView = () => {
           });
 
           if (cartRes.ok) {
-            // Berhasil menambahkan ke keranjang
-            alert(
-              `${pendingCartItem.product_name || "Produk"} ukuran ${
-                pendingCartItem.size
-              } berhasil ditambahkan ke keranjang!`
-            );
+            showNotification("Item ditambahkan ke keranjang Anda!", "success");
+          } else {
+            showNotification("Gagal menambahkan item ke keranjang", "error");
           }
 
-          // Redirect ke halaman produk yang sebelumnya dilihat
           router.push(pendingCartItem.redirect_url);
           return;
         } catch (err) {
           console.error("Error processing pending cart item:", err);
-          // Jika terjadi error, lanjut ke redirect default
+          showNotification("Terjadi kesalahan saat memproses keranjang", "error");
         }
       }
 
-      // Jika tidak ada item tertunda atau terjadi error, redirect ke halaman utama
+      // Jika bukan admin, arahkan ke home
       router.push("/");
     } catch (err: any) {
       setError(err.message);
+      showNotification(err.message || "Login gagal", "error");
     } finally {
       setLoading(false);
     }

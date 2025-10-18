@@ -3,36 +3,31 @@ import "../styles/globals.css";
 import Layout from "@/components/common/Layout";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { NotificationProvider } from "@/components/context/NotificationContext";
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
-  // Only run on client-side
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Determine auth pages server-safe way using pathname from router
   const isAuthPage = router.pathname.includes("/auth");
 
-  // First render - show what was rendered on server
-  if (!mounted) {
-    return isAuthPage ? (
-      <Component {...pageProps} />
-    ) : (
-      <Layout>
-        <Component {...pageProps} />
-      </Layout>
-    );
-  }
-
-  // Client-side render - now safe to use browser APIs
-  return isAuthPage ? (
+  // ✅ Semua kasus dibungkus dengan NotificationProvider
+  const content = isAuthPage ? (
     <Component {...pageProps} />
   ) : (
     <Layout>
       <Component {...pageProps} />
     </Layout>
+  );
+
+  return (
+    <NotificationProvider>
+      {/* Saat belum mounted, tampilkan versi awal dulu */}
+      {!mounted ? content : content}
+    </NotificationProvider>
   );
 }

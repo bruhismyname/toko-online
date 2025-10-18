@@ -12,7 +12,6 @@ function AdminDashboardView() {
     try {
       const res = await fetch("/api/admin/products");
 
-      // 🚫 Kalau tidak punya akses → tampilkan halaman 404
       if (res.status === 401 || res.status === 403) {
         router.push("/404");
         return [];
@@ -34,7 +33,6 @@ function AdminDashboardView() {
         headers: { "Content-Type": "application/json" },
       });
 
-      // 🚫 Kalau tidak punya akses → tampilkan halaman 404
       if (res.status === 401 || res.status === 403) {
         router.push("/404");
         return [];

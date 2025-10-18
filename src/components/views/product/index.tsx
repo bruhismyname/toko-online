@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useNotification } from "@/components/context/NotificationContext"; // ✅ pakai context global notif
 
 type ProductViewProps = {
   id: string;
@@ -9,16 +10,14 @@ type ProductViewProps = {
 
 const DetailProductView = ({ id }: ProductViewProps) => {
   const router = useRouter();
+  const { showNotification } = useNotification(); // ✅ context notifikasi
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedStock, setSelectedStock] = useState<{
-    id: number;
-    size: string;
-  } | null>(null);
+  const [selectedStock, setSelectedStock] = useState<{ id: number; size: string } | null>(null);
 
-  // Cek status login
+  // ✅ Cek status login
   useEffect(() => {
     const checkLoginStatus = async () => {
       try {
@@ -42,37 +41,36 @@ const DetailProductView = ({ id }: ProductViewProps) => {
     checkLoginStatus();
   }, []);
 
-  // Fetch data produk
+  // ✅ Fetch data produk
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const res = await fetch(`/api/product?id=${id}`);
         if (!res.ok) {
-          const errData = await res.json();
-          console.log(errData.message);
-          throw new Error("Failed to fetch product");
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || "Gagal memuat produk");
         }
         const data = await res.json();
-
         setProduct(data.product);
       } catch (err: any) {
         console.error("Error fetching product:", err);
         setError(err.message);
+        showNotification("Gagal memuat produk. Silakan coba lagi.", "error"); // ✅ notif error
       } finally {
         setLoading(false);
       }
     };
 
     fetchProduct();
-  }, [id]);
+  }, [id, showNotification]);
 
+  // ✅ Handle tambah ke keranjang
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStock) return;
 
-    // Jika pengguna belum login, simpan informasi produk dan redirect ke login
     if (!isLoggedIn) {
-      // Simpan informasi produk ke localStorage
+      // Simpan data sementara untuk login redirect
       localStorage.setItem(
         "pendingCartItem",
         JSON.stringify({
@@ -84,7 +82,7 @@ const DetailProductView = ({ id }: ProductViewProps) => {
         })
       );
 
-      // Redirect ke halaman login
+      showNotification("Silakan login terlebih dahulu untuk menambahkan ke keranjang.", "info"); // ✅ notif login
       router.push("/auth/login");
       return;
     }
@@ -99,24 +97,21 @@ const DetailProductView = ({ id }: ProductViewProps) => {
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const errData = await res.json();
-        console.log(errData.message);
-        throw new Error("Failed to add to cart");
+        throw new Error(data.message || "Gagal menambahkan ke keranjang");
       }
 
-      // Jika berhasil
-      alert(
-        `${product.name} ukuran ${selectedStock.size} berhasil ditambahkan ke keranjang!`
-      );
+      showNotification(`${product.name} (size ${selectedStock.size}) berhasil ditambahkan ke keranjang!`, "success"); // ✅ notif sukses
       setSelectedStock(null);
     } catch (error) {
       console.error("Error adding to cart:", error);
-      alert("Gagal menambahkan produk ke keranjang");
+      showNotification("Gagal menambahkan produk ke keranjang.", "error"); // ✅ notif error
     }
   };
 
-  // Tampilan loading, error dan UI produk (tidak berubah)
+  // ✅ Loading
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -128,6 +123,7 @@ const DetailProductView = ({ id }: ProductViewProps) => {
     );
   }
 
+  // ✅ Error
   if (error) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -144,8 +140,7 @@ const DetailProductView = ({ id }: ProductViewProps) => {
     );
   }
 
-  const availableSizes =
-    product.stocks?.filter((stock: any) => stock.quantity > 0) || [];
+  const availableSizes = product.stocks?.filter((s: any) => s.quantity > 0) || [];
 
   return (
     <div className="min-h-screen bg-white">
@@ -166,21 +161,19 @@ const DetailProductView = ({ id }: ProductViewProps) => {
           <div className="space-y-6">
             <div>
               <h1 className="text-4xl font-bold mb-2">{product.name}</h1>
-              <p className="text-xl text-gray-600">
-                {product.categories?.name || "Uncategorized"}
-              </p>
+              <p className="text-xl text-gray-600">{product.categories?.name || "Uncategorized"}</p>
             </div>
 
             <div className="text-3xl font-bold">
               Rp {product.price?.toLocaleString("id-ID")}
             </div>
 
-            {/* Size Selection */}
+            {/* Pilih Ukuran */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <label className="text-sm font-semibold">Select Size</label>
+                <label className="text-sm font-semibold">Pilih Ukuran</label>
                 <Link href="/size-guide" className="text-sm underline">
-                  Size Guide
+                  Panduan Ukuran
                 </Link>
               </div>
 
@@ -188,9 +181,7 @@ const DetailProductView = ({ id }: ProductViewProps) => {
                 {availableSizes.map((stock: any) => (
                   <button
                     key={stock.id}
-                    onClick={() =>
-                      setSelectedStock({ id: stock.id, size: stock.size })
-                    }
+                    onClick={() => setSelectedStock({ id: stock.id, size: stock.size })}
                     className={`py-3 px-4 border-2 rounded-lg font-medium transition-all ${
                       selectedStock?.id === stock.id
                         ? "border-black bg-black text-white"
@@ -204,17 +195,13 @@ const DetailProductView = ({ id }: ProductViewProps) => {
 
               {selectedStock && (
                 <p className="text-sm text-gray-600">
-                  Stock available:{" "}
-                  {
-                    availableSizes.find((s: any) => s.id === selectedStock.id)
-                      ?.quantity
-                  }{" "}
-                  pairs
+                  Stok tersedia:{" "}
+                  {availableSizes.find((s: any) => s.id === selectedStock.id)?.quantity} pasang
                 </p>
               )}
             </div>
 
-            {/* Action Buttons */}
+            {/* Tombol Aksi */}
             <div className="space-y-3">
               <button
                 className="w-full bg-black text-white py-4 px-6 rounded-full font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
@@ -222,28 +209,24 @@ const DetailProductView = ({ id }: ProductViewProps) => {
                 onClick={handleSubmit}
               >
                 <ShoppingCart className="inline w-5 h-5 mr-2" />
-                {isLoggedIn
-                  ? "Add to Bag"
-                  : "Login untuk Menambahkan ke Keranjang"}
+                {isLoggedIn ? "Tambah ke Keranjang" : "Login untuk Menambahkan"}
               </button>
             </div>
 
-            {/* Additional Info */}
+            {/* Info Tambahan */}
             <div className="border-t border-gray-200 pt-6 space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Product Code</span>
+                <span className="text-gray-600">Kode Produk</span>
                 <span className="font-medium">#{product.id}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Status</span>
                 <span
                   className={`font-medium ${
-                    availableSizes.length > 0
-                      ? "text-green-600"
-                      : "text-red-600"
+                    availableSizes.length > 0 ? "text-green-600" : "text-red-600"
                   }`}
                 >
-                  {availableSizes.length > 0 ? "In Stock" : "Out of Stock"}
+                  {availableSizes.length > 0 ? "Tersedia" : "Stok Habis"}
                 </span>
               </div>
             </div>

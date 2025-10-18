@@ -15,6 +15,8 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
         if (cartItemError) return res.status(500).json({ message: "Error retrieving cart item" });
         if (cartItem.length === 0) return res.status(404).json({ message: "Cart item not found" });
 
+        console.log(cartItem);
+
         const { data: existingOrders, error: orderError } = await RetrieveDataByField("orders", { user_id });
         if (orderError) return res.status(500).json({ message: "Error checking existing order" });
 
@@ -41,9 +43,10 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
 
         if (stockData[0].quantity === 0) 
             return res.status(404).json({ message: "Stok habis" });
-        if (stockData[0].quantity < cartItem[0].qty) 
+        if (stockData[0].quantity < cartItem[0].qty) {
             console.log("jalan")
             return res.status(400).json({ message: "Stok tidak mencukupi" });
+        }
 
         const totalPrice = productData[0].price * cartItem[0].qty;
         const { data: newOrderItem, error: orderItemError } = await addData("order_items", {

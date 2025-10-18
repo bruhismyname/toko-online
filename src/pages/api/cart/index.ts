@@ -19,9 +19,18 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
         "carts",
         "cart_items",
         ["id", "user_id", "created_at"],
-        ["id", "product_id", "stock_id" ,"qty", "products(*) , stocks(*)"], 
-        { user_id: userId }
+        [
+          "id",
+          "product_id",
+          "stock_id",
+          "qty",
+          "status",
+          "products(*), stocks(*)"
+        ],
+        { user_id: userId, "cart_items.status": "in_cart" } 
       );
+
+      console.log(cartsRes);
 
       if (cartsRes.error) throw cartsRes.error;
 
@@ -157,10 +166,11 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
     });
     if (itemError) return res.status(500).json({ message: "Error checking cart items" });
     if (existingItem.length === 0) return res.status(404).json({ message: "Item not found in cart" });
-
+    console.log(itemError);
     console.log(existingItem);
 
     const item = existingItem[0];
+    console.log(item)
     const { error: deleteError } = await deleteData("cart_items", item.id);
     console.log(deleteError);
     if (deleteError) return res.status(500).json({ message: "Error deleting item" });

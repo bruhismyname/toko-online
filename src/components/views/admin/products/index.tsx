@@ -3,6 +3,9 @@ import AddCategoryModal from "@/components/fragment/modal/add-category-modal";
 import AddProductModal from "@/components/fragment/modal/add-product-modal";
 import AdminLayout from "@/components/views/admin/layout";
 import { useRouter } from "next/router";
+import EditProductModal from "@/components/fragment/modal/edit-product";
+import { useNotification } from "@/components/context/NotificationContext";
+import { get } from "http";
 
 const AdminProductView = () => {
   const router = useRouter();
@@ -13,6 +16,10 @@ const AdminProductView = () => {
     const [categoryFilter, setCategoryFilter] = useState<string>("all");
     const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
     const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+    const [isEditProductOpen, setIsEditProductOpen] = useState(false);
+    const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+
+    const { showNotification } = useNotification();
 
   
   const categories = Array.from(
@@ -63,13 +70,28 @@ const AdminProductView = () => {
   };
 
   const handleEdit = (product: any) => {
-    console.log('Edit product:', product);
-    // TODO: Implement edit logic here
+    setSelectedProductId(product.id);
+    setIsEditProductOpen(true);
   };
 
-  const handleDelete = (productId: number) => {
-    console.log('Delete product:', productId);
-    // TODO: Implement delete logic here
+  const handleDelete = async (productId: number) => {
+    try {
+      const res = await fetch(`/api/admin/products?id=${productId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (res.ok) {
+        showNotification("Produk berhasil dihapus!", "success");
+        const data = await getAllProducts();
+        setProducts(data); 
+      } else {
+        showNotification("Gagal menghapus produk", "error");
+      }
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      showNotification("Terjadi kesalahan saat menghapus produk", "error");
+    }
   };
 
   const handleAddProduct = () => {
@@ -377,6 +399,11 @@ const AdminProductView = () => {
           <AddCategoryModal isOpen={isAddCategoryOpen} onClose={() => setIsAddCategoryOpen(false)} onCategoryAdded={() => {getAllProducts().then(setProducts)}} />
           <AddProductModal isOpen={isAddProductOpen} onClose={() => setIsAddProductOpen(false)}  onProductAdded={() => {getAllProducts().then(setProducts)}} />
       </div>
+      <EditProductModal
+        isOpen={isEditProductOpen}
+        onClose={() => setIsEditProductOpen(false)}
+        productId={selectedProductId}
+      />
     </AdminLayout>
   );
 };

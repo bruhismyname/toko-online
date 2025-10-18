@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNotification } from "@/components/context/NotificationContext";
 
 type AddressModalProps = {
   userId: string;
@@ -13,17 +14,20 @@ const AddressModal = ({ userId, onClose, onSuccess }: AddressModalProps) => {
     province: "",
     postal_code: "",
   });
-  const [loading, setLoading] = useState(false); // Tambahkan state loading
-  const [error, setError] = useState<string | null>(null); // Tambahkan state error
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ✅ gunakan context (bukan custom hook)
+  const { showNotification } = useNotification();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async () => {
-    // Validasi form
     if (!form.street || !form.city || !form.province || !form.postal_code) {
       setError("Semua field harus diisi");
+      showNotification("Semua field harus diisi", "error");
       return;
     }
 
@@ -31,7 +35,6 @@ const AddressModal = ({ userId, onClose, onSuccess }: AddressModalProps) => {
     setLoading(true);
 
     try {
-      // Pastikan userId selalu string
       const stringUserId = String(userId);
       console.log("Submitting address with user ID:", stringUserId);
 
@@ -44,33 +47,33 @@ const AddressModal = ({ userId, onClose, onSuccess }: AddressModalProps) => {
         }),
       });
 
-      // Coba ambil respons JSON
       let data;
       try {
         data = await res.json();
-      } catch (e) {
-        // Jika tidak bisa parse JSON, gunakan objek kosong
+      } catch {
         data = {};
       }
 
       if (res.ok) {
-        // Panggil onSuccess dalam try-catch untuk menangani error
+        showNotification("Alamat berhasil ditambahkan!", "success");
         try {
           onSuccess();
           onClose();
-        } catch (successError) {
-          console.error("Error during success callback:", successError);
-          alert(
-            "Alamat berhasil ditambahkan, tetapi gagal memperbarui tampilan. Silakan refresh halaman."
+        } catch (callbackError) {
+          console.error("Error onSuccess:", callbackError);
+          showNotification(
+            "Alamat disimpan, tapi gagal memperbarui tampilan. Silakan refresh halaman.",
+            "info"
           );
         }
       } else {
-        setError(data.message || "Gagal menambahkan alamat");
-        console.error("Gagal menambahkan alamat:", data);
+        const msg = data.message || "Gagal menambahkan alamat";
+        setError(msg);
+        showNotification(msg, "error");
       }
     } catch (submitError) {
       console.error("Error submitting address:", submitError);
-      setError("Terjadi kesalahan saat menambahkan alamat");
+      showNotification("Terjadi kesalahan saat menambahkan alamat", "error");
     } finally {
       setLoading(false);
     }

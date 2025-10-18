@@ -10,12 +10,9 @@ const AboutPage = () => {
 
       <main className="bg-white">
 
-        {/* Content */}
         <section className="mx-auto max-w-6xl px-6 pb-16 pt-4">
-          {/* Title */}
           <h1 className="mb-6 text-2xl font-bold text-gray-900">Tentang Kami</h1>
 
-          {/* Section: Tentang Converse */}
           <article className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">Tentang Converse</h2>
             <p className="text-justify text-sm leading-7 text-gray-800">
@@ -35,10 +32,8 @@ const AboutPage = () => {
             </p>
           </article>
 
-          {/* Spacer line */}
           <hr className="my-8 border-gray-200" />
 
-          {/* Section: Tentang MAPA */}
           <article className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">
               Tentang Bakul Converse
@@ -51,7 +46,6 @@ const AboutPage = () => {
             </p>
           </article>
 
-          {/* Optional: kontak ringkas */}
           <div className="mt-10 rounded-2xl border border-gray-200 bg-gray-50 p-5">
             <h3 className="mb-2 text-sm font-semibold text-gray-900">Kontak & Informasi</h3>
             <p className="text-sm text-gray-700">
