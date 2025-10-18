@@ -31,14 +31,18 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
         const { data: productData, error: productError } = await RetrieveDataByField("products", { id: cartItem[0].product_id });
         if (productError) return res.status(500).json({ message: "Error retrieving product" });
         if (productData.length === 0) return res.status(404).json({ message: "Product not found" });
+        console.log(productData);
 
         const { data: stockData, error: stockError } = await RetrieveDataByField("stocks", { id: cartItem[0].stock_id });
         if (stockError) return res.status(500).json({ message: "Error retrieving stock" });
         if (stockData.length === 0) return res.status(404).json({ message: "Stock not found" });
+        console.log(stockData);
+
 
         if (stockData[0].quantity === 0) 
             return res.status(404).json({ message: "Stok habis" });
         if (stockData[0].quantity < cartItem[0].qty) 
+            console.log("jalan")
             return res.status(400).json({ message: "Stok tidak mencukupi" });
 
         const totalPrice = productData[0].price * cartItem[0].qty;

@@ -32,28 +32,15 @@ export async function updateData(tableName: string, id: string, data: any) {
 //   return { data: result ?? [], error };
 // }
 
-export const deleteData = async (table: string, match: any) => {
-  try {
-    console.log(`Deleting from ${table} with match criteria:`, match);
+export async function deleteData(tableName: string, id: string) {
+  const { data: result, error } = await supabase
+    .from(tableName)
+    .delete()
+    .eq("id", id)
+    .select("*");
 
-    const { data, error } = await supabase
-      .from(table)
-      .delete()
-      .match(match)
-      .select(); // Tambahkan select() untuk mendapatkan data yang dihapus
-
-    if (error) {
-      console.error(`Error deleting data from ${table}:`, error);
-      return { error };
-    }
-
-    console.log(`Successfully deleted data from ${table}:`, data);
-    return { data };
-  } catch (error) {
-    console.error(`Unexpected error in deleteData:`, error);
-    return { error };
-  }
-};
+  return { data: result ?? [], error }; 
+}
 
 export async function RetrieveData(tableName: string) {
   const { data: result, error } = await supabase.from(tableName).select("*");
