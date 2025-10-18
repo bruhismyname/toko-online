@@ -73,32 +73,11 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="text-gray-300 hover:text-white">
-                  FAQ
-                </Link>
-              </li>
-              <li>
                 <Link
                   href="/size-guide"
                   className="text-gray-300 hover:text-white"
                 >
                   Panduan Ukuran
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/return-policy"
-                  className="text-gray-300 hover:text-white"
-                >
-                  Kebijakan Pengembalian
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/privacy"
-                  className="text-gray-300 hover:text-white"
-                >
-                  Kebijakan Privasi
                 </Link>
               </li>
             </ul>

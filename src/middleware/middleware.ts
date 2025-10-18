@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import {parse} from "cookie";
+import { parse } from "cookie";
 
 export function middleware(req: Request) {
   const cookies = req.headers.get("cookie");
   const parsed = cookies ? parse(cookies) : {};
-  const token = parsed.token; 
+  const token = parsed.token;
 
   if (!token) {
     return NextResponse.redirect(new URL("/auth/login", req.url));
@@ -20,5 +20,5 @@ export function middleware(req: Request) {
 }
 
 export const config = {
-  matcher: "/dashboard/:path*",
+  matcher: ["/dashboard/:path*", "/account/:path*"],
 };

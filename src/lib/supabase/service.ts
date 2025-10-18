@@ -1,5 +1,4 @@
-import supabase from "./init"
-import supabaseAdmin from "./admin-service";
+import supabase from "./init";
 
 export async function addData(tableName: string, data: any) {
   const payload = Array.isArray(data) ? data : [data];
@@ -20,18 +19,41 @@ export async function updateData(tableName: string, id: string, data: any) {
     .eq("id", id)
     .select("*");
 
-  return { data: result ?? [], error }; 
+  return { data: result ?? [], error };
 }
 
-export async function deleteData(tableName: string, id: string) {
-  const { data: result, error } = await supabase
-    .from(tableName)
-    .delete()
-    .eq("id", id)
-    .select("*");
+// export async function deleteData(tableName: string, id: string) {
+//   const { data: result, error } = await supabase
+//     .from(tableName)
+//     .delete()
+//     .eq("id", id)
+//     .select("*");
 
-  return { data: result ?? [], error }; 
-}
+//   return { data: result ?? [], error };
+// }
+
+export const deleteData = async (table: string, match: any) => {
+  try {
+    console.log(`Deleting from ${table} with match criteria:`, match);
+
+    const { data, error } = await supabase
+      .from(table)
+      .delete()
+      .match(match)
+      .select(); // Tambahkan select() untuk mendapatkan data yang dihapus
+
+    if (error) {
+      console.error(`Error deleting data from ${table}:`, error);
+      return { error };
+    }
+
+    console.log(`Successfully deleted data from ${table}:`, data);
+    return { data };
+  } catch (error) {
+    console.error(`Unexpected error in deleteData:`, error);
+    return { error };
+  }
+};
 
 export async function RetrieveData(tableName: string) {
   const { data: result, error } = await supabase.from(tableName).select("*");
@@ -39,7 +61,10 @@ export async function RetrieveData(tableName: string) {
 }
 
 export async function RetrieveDataById(tableName: string, id: string) {
-  const { data: result, error } = await supabase.from(tableName).select("*").eq("id", id);
+  const { data: result, error } = await supabase
+    .from(tableName)
+    .select("*")
+    .eq("id", id);
   return { data: result, error };
 }
 
@@ -59,10 +84,10 @@ export async function RetrieveDataByField(
 
 export async function RetrieveDataWithJoin(
   tableName: string,
-  relation: string, 
-  fields: string[] = ["*"], 
-  relationFields: string[] = ["*"], 
-  filters?: { [key: string]: string | number | boolean } 
+  relation: string,
+  fields: string[] = ["*"],
+  relationFields: string[] = ["*"],
+  filters?: { [key: string]: string | number | boolean }
 ) {
   let query = supabase
     .from(tableName)
@@ -77,49 +102,3 @@ export async function RetrieveDataWithJoin(
   const { data: result, error } = await query;
   return { data: result ?? [], error };
 }
-
-
-export const uploadImage = async (
-  file: Buffer | File,
-  bucket: string,
-  fullname: string,
-  mimeType?: string
-) => {
-  let fileExt = "";
-  let fileName = "";
-
-  if (file instanceof File) {
-    fileExt = file.name.split(".").pop()?.toLowerCase() || "";
-    fileName = `${fullname}.${fileExt}`;
-  } else {
-    const fallbackExt = mimeType?.split("/")[1] || "png";
-    fileExt = fallbackExt;
-    fileName = `${fullname}.${fileExt}`;
-  }
-
-  const filePath = fileName;
-
-  const { data, error } = await supabaseAdmin.storage
-    .from(bucket)
-    .upload(filePath, file, {
-      cacheControl: "3600",
-      upsert: false,
-      contentType: mimeType ?? (file instanceof File ? file.type : "image/png"),
-    });
-
-  if (error) {
-    console.error("Error uploading image:", error.message);
-    throw new Error(error.message);
-  }
-
-  const { data: publicUrlData } = supabaseAdmin.storage
-    .from(bucket)
-    .getPublicUrl(filePath);
-
-  return {
-    path: data?.path,
-    publicUrl: publicUrlData?.publicUrl,
-  };
-};
-
-

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Pencil, Save, X, Plus, Trash2, User } from "lucide-react";
-import AddressModal from "@/components/fragment/modal/address-modal";
+import AddressModal from "@/components/fragment/modal";
 
 type UserProfile = {
   id: string;
