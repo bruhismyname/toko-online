@@ -223,7 +223,7 @@ const SizeGuidePage = () => {
 
         {/* Notes */}
         <p className="mt-2 text-xs text-gray-500">
-          "Gaya Lainnya" mencakup seri seperti Jack Purcell, One Star, Pro Leather, G4, dan lini Converse lainnya.
+          Gaya Lainnya mencakup seri seperti Jack Purcell, One Star, Pro Leather, G4, dan lini Converse lainnya.
           Lihat halaman detail produk untuk rekomendasi ukuran yang disarankan.
         </p>
       </section>
