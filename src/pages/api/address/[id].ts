@@ -37,7 +37,7 @@ async function handler(
 
       // Delete alamat
       console.log("Deleting address with ID:", id);
-      const result = await deleteData("addresses", { id });
+      const result = await deleteData("addresses", id);
 
       if (result.error) {
         console.error("Error deleting address:", result.error);

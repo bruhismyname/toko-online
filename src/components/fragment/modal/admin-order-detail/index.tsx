@@ -13,6 +13,8 @@ export default function OrderDetailModal({ orderId, isOpen, onClose, onUpdateSuc
   const [selectedStatus, setSelectedStatus] = useState('');
   const [updating, setUpdating] = useState(false); 
 
+  console.log("jaan")
+
   useEffect(() => {
     const fetchOrderDetails = async () => {
       if (!orderId) return;

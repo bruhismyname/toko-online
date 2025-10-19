@@ -99,5 +99,4 @@ async function handler(
   return res.status(405).json({ message: "Method Not Allowed" });
 }
 
-// Menggunakan middleware withAuth untuk proteksi API
 export default withAuth(handler);

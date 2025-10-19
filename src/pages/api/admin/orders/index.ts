@@ -1,5 +1,6 @@
 // /pages/api/orders.ts
 import supabase from "@/lib/supabase/init";
+import { deleteData, updateData } from "@/lib/supabase/service";
 import { withAuth } from "@/utils/withAuth";
 import { NextApiRequest, NextApiResponse } from "next";
 
@@ -125,6 +126,46 @@ async function handler(req: NextApiRequest & { user?: any }, res: NextApiRespons
         return res.status(500).json({ message: "Unexpected error occurred", err });
       }
     }
+  } else if (req.method === "PUT"){
+
+    const { orderId } = req.body;
+    const { status } = req.body;
+    console.log(req.body);
+    console.log("User API accessed: /api/orders");
+    console.log(orderId, status);
+
+    if (!orderId || Array.isArray(orderId)) {
+      return res.status(400).json({ message: "Invalid orderId" });
+    }
+
+    if (!status || Array.isArray(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const { data, error } = await updateData("order_items", orderId.toString(), { status });
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({ message: "Gagal memperbarui status order" });
+    }
+
+    return res.status(200).json(data);
+  } else if (req.method === "DELETE"){
+
+    const { orderId } = req.query;
+    console.log("User API accessed: /api/orders");
+    console.log(orderId);
+
+    if (!orderId || Array.isArray(orderId)) {
+      return res.status(400).json({ message: "Invalid orderId" });
+    }
+
+    const { data, error } = await deleteData("order_items", orderId.toString());
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({ message: "Gagal menghapus order" });
+    }
+
+    return res.status(200).json(data);
   } else {
     return res.status(405).json({ message: "Method not allowed" });
   }

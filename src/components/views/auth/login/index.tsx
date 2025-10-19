@@ -41,13 +41,11 @@ const LoginView = () => {
 
       showNotification("Login berhasil!", "success");
 
-      // Jika user admin → redirect ke dashboard admin
       if (result.role === "admin") {
         router.push("/admin/dashboard");
         return;
       }
 
-      // Jika ada pending cart item di localStorage
       const pendingCartItemStr = localStorage.getItem("pendingCartItem");
       if (pendingCartItemStr) {
         try {
@@ -78,7 +76,6 @@ const LoginView = () => {
         }
       }
 
-      // Jika bukan admin, arahkan ke home
       router.push("/");
     } catch (err: any) {
       setError(err.message);

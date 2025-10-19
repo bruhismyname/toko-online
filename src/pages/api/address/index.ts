@@ -151,7 +151,7 @@ async function handler(
         return res.status(400).json({ message: "ID alamat diperlukan" });
       }
 
-      const result = await deleteData("addresses", { id });
+      const result = await deleteData("addresses", id as string);
 
       if (result.error) {
         console.error("Error deleting address:", result.error);
