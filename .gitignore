@@ -46,3 +46,5 @@ others
 .env.production.local
 /tailwind.config.js
 /tailwind.config.ts
+
+package-lock.json
